@@ -419,6 +419,7 @@ dialog .row-btns .left{margin-right:auto}
 .hm-scale .ramp{width:140px;height:8px;border-radius:4px;background:linear-gradient(90deg,#132238,#17457A,#1F86A6,#E0B23C,#FFF4D6)}
 .hm-scale .k{display:inline-flex;align-items:center;gap:6px}
 .hm-scale .k i{display:inline-block;width:10px;height:10px;border-radius:50%}
+.hm-scale .k[hidden]{display:none}
 .hm-tools{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
 .hm-tools label.chk input[type=range]{width:110px;padding:0;accent-color:var(--gold)}
 .hm-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:16px}
@@ -669,7 +670,7 @@ dialog .row-btns .left{margin-right:auto}
           </div>
         </section>
         <div class="hm-grid">
-          <section class="card"><div class="card-h"><h3>Murs d'ordres</h3><span class="muted" id="hmWallsAge" style="margin:0"></span></div><div id="hmWalls"></div></section>
+          <section class="card"><div class="card-h"><h3 id="hmWallsTitle">Murs d'ordres</h3><span class="muted" id="hmWallsAge" style="margin:0"></span></div><div id="hmWalls"></div></section>
           <section class="card"><h3>Déséquilibre du carnet</h3><div id="hmImb"></div></section>
         </div>
         <p class="muted" id="hmQuality"></p>
@@ -900,7 +901,7 @@ dialog .row-btns .left{margin-right:auto}
     <p>La vue Liquidité montre le carnet d'ordres : les ordres d'achat et de vente posés à l'avance, qui attendent qu'un prix soit atteint. Chaque colonne est une photo du carnet (toutes les 0,25, 1 ou 3 secondes selon la vitesse choisie), les plus récentes à droite. Plus une case est claire, plus il y a d'ordres en attente à ce prix ; une bande claire et continue est un « mur » d'ordres qui tient dans le temps. La ligne blanche suit le prix. Avec Binance, les ronds verts et rouges sont les transactions exécutées au marché, acheteurs agressifs en vert et vendeurs agressifs en rouge, leur taille suit le volume échangé.</p>
     <p>À droite de la carte, le carnet actuel : les barres vertes sont les ordres d'achat sous le prix, les rouges les ordres de vente au-dessus. Survole la carte pour lire la quantité exacte à un prix et à un instant donnés. Utilise − et + pour élargir ou resserrer la plage de prix (Ctrl ou Maj et la molette fonctionnent aussi), le curseur Contraste pour faire ressortir les petits ordres, et Figer pour étudier la carte sans qu'elle défile (l'enregistrement continue en arrière-plan).</p>
     <p>Comment s'en servir : un mur qui tient au-dessus du prix peut freiner la hausse, un mur qui tient en dessous peut soutenir le prix. Quand le prix arrive sur un mur, regarde s'il est absorbé (les transactions s'accumulent et le mur fond, souvent avant une cassure) ou s'il tient (le prix rebondit). Un mur qui disparaît juste avant d'être touché était peut-être là pour impressionner : c'est pourquoi la liste des murs indique depuis combien de temps chacun est présent.</p>
-    <p>Limites : avec Binance, c'est le carnet réel de PAXG/USDT, un marché beaucoup plus petit que l'or. Avec cTrader, c'est la profondeur fournie par ton broker, qui reflète les prix de ses fournisseurs de liquidité et non un carnet central. Dans les deux cas, la carte indique où regarder, pas ce que fera le marché. Pour le vrai carnet de l'or et du Nasdaq, il faut les contrats à terme du CME (GC et NQ) et un abonnement de données payant.</p>
+    <p>Limites : avec Binance, c'est le carnet réel de PAXG/USDT, un marché beaucoup plus petit que l'or. Avec cTrader, c'est la profondeur fournie par ton broker, qui reflète les prix de ses fournisseurs de liquidité et non un carnet central. Son échelle compte peu de niveaux, se déplace à chaque tick et grossit avec la distance au prix : la carte la moyenne et l'adoucit pour la rendre lisible, ajuste la plage de prix à sa profondeur, et le tableau « Niveaux du broker » remplace la liste des murs en signalant les niveaux nettement plus ou moins fournis que leur moyenne de la dernière minute. Dans les deux cas, la carte indique où regarder, pas ce que fera le marché. Pour le vrai carnet de l'or et du Nasdaq, il faut les contrats à terme du CME (GC et NQ) et un abonnement de données payant.</p>
   </details>
   <details>
     <summary>Comment lire le footprint</summary>
@@ -1954,8 +1955,21 @@ const HM_LUT = (() => {
 
 /* ----- cycle de vie ----- */
 function bookReset() { book.cols = []; book.trade = null; book.vc = null; book.base = null; book.ref = 0; book.pauseCol = null; hmDraw(); hmSummary(); }
+function bookAccReset() { book.acc = { b: new Map(), a: new Map(), lb: [], la: [], n: 0 }; }
+function bookAccTick() {
+  if (book.kind !== "ctrader" || book.state !== "on") return;
+  const { b, a } = bookSides(); if (!b.size || !a.size) return;
+  const A = book.acc || (bookAccReset(), book.acc);
+  for (const [p, q] of b) A.b.set(p, (A.b.get(p) || 0) + q);
+  for (const [p, q] of a) A.a.set(p, (A.a.get(p) || 0) + q);
+  /* taille par rang dans l'échelle (1er niveau, 2e niveau…), pour comparer à la normale */
+  [...b.entries()].sort((x, y) => y[0] - x[0]).forEach(([, q], i) => { A.lb[i] = (A.lb[i] || 0) + q; });
+  [...a.entries()].sort((x, y) => x[0] - y[0]).forEach(([, q], i) => { A.la[i] = (A.la[i] || 0) + q; });
+  A.n++;
+}
 function bookStop() {
   book.gen++; clearTimeout(book.rtimer); clearInterval(book.stimer); book.stimer = null;
+  clearInterval(book.atimer); book.atimer = null; bookAccReset();
   if (book.ws) { book.ws.onclose = null; try { book.ws.close(); } catch {} book.ws = null; }
   if (ct.depthOn && ct.ws && ct.ws.readyState === 1) ctSend(2158, { ctidTraderAccountId: ct.account, symbolId: [Number(ct.symbolId)] }, 10000).catch(() => {});
   ct.depthOn = false;
@@ -1967,7 +1981,7 @@ function bookStart() {
   bookStop();
   const S = curSrc(), g = book.gen;
   if (S.kind === "binance") { book.kind = "binance"; book.sym = S.sym; book.retry = 0; bookBnConnect(g); }
-  else if (S.kind === "ctrader") { book.kind = "ctrader"; bookCtSubscribe(g); }
+  else if (S.kind === "ctrader") { book.kind = "ctrader"; bookCtSubscribe(g); bookAccReset(); book.atimer = setInterval(bookAccTick, 100); }
   else { hmDraw(); return; }
   book.stimer = setInterval(bookSample, book.colMs);
 }
@@ -2076,18 +2090,28 @@ function bookSides() {
 }
 function bookSample() {
   if (!book.kind || book.state !== "on") return;
-  const { b, a } = bookSides();
+  let { b, a } = bookSides();
   if (!b.size || !a.size) return;
+  /* meilleurs prix : l'échelle actuelle */
+  let bb = -Infinity, ba = Infinity; for (const p of b.keys()) if (p > bb) bb = p; for (const p of a.keys()) if (p < ba) ba = p;
+  const mid = (bb + ba) / 2;
+  let lvB = null, lvA = null;
+  if (book.kind === "ctrader" && book.acc && book.acc.n) {
+    /* cTrader : quantité moyenne à chaque prix pendant la colonne, l'échelle du broker bougeant à chaque tick */
+    const A = book.acc, n = A.n;
+    b = new Map([...A.b].map(([p, q]) => [p, q / n])); a = new Map([...A.a].map(([p, q]) => [p, q / n]));
+    lvB = A.lb.map(q => q / n); lvA = A.la.map(q => q / n);
+    bookAccReset();
+  }
   const bl = [...b.entries()].sort((x, y) => y[0] - x[0]).slice(0, HM.keep);
   const al = [...a.entries()].sort((x, y) => x[0] - y[0]).slice(0, HM.keep);
-  const bb = bl[0][0], ba = al[0][0], mid = (bb + ba) / 2;
   const n = bl.length + al.length, P = new Float64Array(n), Q = new Float32Array(n);
   let i = 0;
   for (const [p, s] of bl) { P[i] = p; Q[i++] = s; }
   for (const [p, s] of al) { P[i] = p; Q[i++] = -s; }
   const tr = book.trade; book.trade = null;
   const vol = tr ? tr.buy + tr.sell : 0;
-  book.cols.push({ t: Date.now(), bb, ba, mid, P, Q, nb: bl.length, buy: tr ? tr.buy : 0, sell: tr ? tr.sell : 0, vw: vol ? tr.pv / vol : null, last: tr ? tr.last : null });
+  book.cols.push({ t: Date.now(), bb, ba, mid, P, Q, nb: bl.length, lvB, lvA, buy: tr ? tr.buy : 0, sell: tr ? tr.sell : 0, vw: vol ? tr.pv / vol : null, last: tr ? tr.last : null });
   if (book.cols.length > HM.maxCols) book.cols.shift();
   /* nettoyage des niveaux très éloignés qui ne servent plus */
   if (book.kind === "binance" && book.cols.length % 120 === 0) {
@@ -2164,10 +2188,14 @@ function hmDraw() {
   const cur = cols[cols.length - 1], ref = cur.last != null ? cur.last : cur.mid;
 
   /* plage de prix : ±0,25 % au zoom 1, recentrée quand le prix s'approche du bord */
-  if (!book.base) book.base = cur.mid * 0.0025;
+  if (book.kind === "ctrader") {
+    let md = 0; for (let k = 0; k < cur.P.length; k++) md = Math.max(md, Math.abs(cur.P[k] - cur.mid));
+    const tgt = Math.max(cur.mid * 0.00015, md * 1.6);
+    if (!book.base || Math.abs(tgt - book.base) / book.base > 0.35) { book.base = tgt; book.vc = null; book.ref = 0; }
+  } else if (!book.base) book.base = cur.mid * 0.0025;
   const vr = book.base / book.zoom;
   if (book.vc == null || Math.abs(ref - book.vc) > vr * 0.6) book.vc = ref;
-  const gr0 = Math.max(24, Math.floor(hh / 3));
+  const gr0 = Math.max(24, Math.floor(hh / (book.kind === "ctrader" ? 6 : 3)));
   const step = Math.max(0.01, niceStep(2 * vr / gr0));
   const lo = Math.floor((book.vc - vr) / step) * step, gr = Math.max(1, Math.ceil((book.vc + vr - lo) / step)), span = gr * step;
   const Y = p => hh - (p - lo) / span * hh;
@@ -2181,6 +2209,19 @@ function hmDraw() {
       const r = Math.floor((P[k] - lo) / step + 1e-9);
       if (r >= 0 && r < gr) G[r * gw + x] += Math.abs(Q[k]);
     }
+  }
+  if (book.kind === "ctrader") {
+    /* l'échelle du broker bouge à chaque tick : on adoucit entre prix voisins et entre colonnes voisines */
+    const S2 = new Float32Array(G.length);
+    for (let r = 0; r < gr; r++) for (let x = 0; x < gw; x++) {
+      let v = 0, w = 0;
+      for (let dr = -1; dr <= 1; dr++) for (let dx = -1; dx <= 0; dx++) {
+        const rr = r + dr, xx = x + dx; if (rr < 0 || rr >= gr || xx < 0) continue;
+        const k = (dr === 0 ? 2 : 1) * (dx === 0 ? 2 : 1); v += G[rr * gw + xx] * k; w += k;
+      }
+      S2[r * gw + x] = v / w;
+    }
+    G.set(S2);
   }
   const nz = []; for (let k = 0; k < G.length; k++) if (G[k] > 0) nz.push(G[k]);
   if (nz.length) { nz.sort((a, b) => a - b); const q = nz[Math.min(nz.length - 1, Math.floor(nz.length * 0.97))]; book.ref = book.ref ? book.ref * 0.75 + q * 0.25 : q; }
@@ -2197,7 +2238,7 @@ function hmDraw() {
     }
   }
   gx.putImageData(img, 0, 0);
-  c.imageSmoothingEnabled = false;
+  c.imageSmoothingEnabled = book.kind === "ctrader"; c.imageSmoothingQuality = "high";
   c.drawImage(hmGridCv, 0, 0, gw, gr, 0, 0, heatW, hh);
 
   /* lignes de prix, prix suivi et transactions */
@@ -2302,6 +2343,33 @@ function hmSummary() {
   if (book.paused && book.pauseCol) { const k = book.cols.indexOf(book.pauseCol); if (k >= 0) end = k + 1; }
   const cur = book.cols[end - 1];
   if (!cur) { $("hmWalls").innerHTML = '<p class="muted">Les murs apparaîtront dès que le carnet sera chargé.</p>'; $("hmImb").innerHTML = ""; $("hmWallsAge").textContent = ""; return; }
+  $("hmWallsTitle").textContent = S.kind === "ctrader" ? "Niveaux du broker" : "Murs d'ordres";
+  if (S.kind === "ctrader") hmLadder(end, u); else hmWallList(cur, end, u);
+  hmImbalance(cur);
+}
+function hmLadder(end, u) {
+  const { b, a } = bookSides();
+  const bl = [...b.entries()].sort((x, y) => y[0] - x[0]).slice(0, 10), al = [...a.entries()].sort((x, y) => x[0] - y[0]).slice(0, 10);
+  if (!bl.length || !al.length) { $("hmWalls").innerHTML = '<p class="muted">En attente de la profondeur du broker.</p>'; $("hmWallsAge").textContent = ""; return; }
+  /* normale de chaque rang sur la dernière minute */
+  const span = Math.max(1, Math.round(60000 / book.colMs)), from = Math.max(0, end - span), avgB = [], avgA = [], cnt = [];
+  for (let j = from; j < end; j++) { const k = book.cols[j]; if (!k.lvB) continue; k.lvB.forEach((q, i) => { avgB[i] = (avgB[i] || 0) + q; cnt[i] = (cnt[i] || 0) + 1; }); (k.lvA || []).forEach((q, i) => { avgA[i] = (avgA[i] || 0) + q; }); }
+  const cell = (q, i, avg) => {
+    const m = cnt[i] ? avg[i] / cnt[i] : 0, r = m ? q / m : 1;
+    const tag = r >= 1.5 ? ' <span class="tag ok">×' + fmt(r, 1) + "</span>" : r <= 0.5 ? ' <span class="tag off">×' + fmt(r, 1) + "</span>" : "";
+    return "<td>" + hmSize(q) + " " + u + tag + "</td>";
+  };
+  const n = Math.max(bl.length, al.length), dec = 2;
+  let rows = "";
+  for (let i = 0; i < n; i++) {
+    const B = bl[i], A = al[i];
+    rows += "<tr><td>" + (i + 1) + "</td>" + (B ? "<td>" + fmt(B[0], dec) + "</td>" + cell(B[1], i, avgB) : "<td></td><td></td>") + (A ? "<td>" + fmt(A[0], dec) + "</td>" + cell(A[1], i, avgA) : "<td></td><td></td>") + "</tr>";
+  }
+  $("hmWalls").innerHTML = '<div class="scroll"><table><thead><tr><th>Rang</th><th>Prix acheteur</th><th>Quantité</th><th>Prix vendeur</th><th>Quantité</th></tr></thead><tbody>' + rows + "</tbody></table></div>" +
+    '<p class="muted">Écart entre les meilleurs prix : ' + fmt(al[0][0] - bl[0][0], dec) + " " + U() + ". Chez un broker CFD, les quantités grossissent normalement avec la distance au prix : ce ne sont pas des murs. Ce qui compte, c'est leur variation : ×1,5 ou plus signale un niveau nettement plus fourni que sa moyenne de la dernière minute, ×0,5 ou moins un niveau qui se vide.</p>";
+  $("hmWallsAge").textContent = "échelle actuelle";
+}
+function hmWallList(cur, end, u) {
   const mid = cur.mid, ws = book.draw ? book.draw.step : niceStep(mid * 0.00005), lim = mid * 0.006;
   const bins = new Map();
   for (let k = 0; k < cur.P.length; k++) {
@@ -2326,13 +2394,17 @@ function hmSummary() {
       '<p class="muted">Un mur est un prix qui porte au moins deux fois et demie plus d\'ordres que la normale. Un ordre affiché peut être retiré à tout moment : un mur présent depuis plusieurs minutes compte plus qu\'un mur apparu à l\'instant.</p>'
     : '<p class="muted">Pas de mur marqué près du prix : les ordres sont répartis de façon régulière.</p>';
   $("hmWallsAge").textContent = "à moins de 0,6 % du prix";
+}
+function hmImbalance(cur) {
+  const mid = cur.mid, ct = book.kind === "ctrader";
   const imb = pct => { let b = 0, a = 0; for (let k = 0; k < cur.P.length; k++) if (Math.abs(cur.P[k] - mid) <= mid * pct) { if (cur.Q[k] > 0) b += cur.Q[k]; else a -= cur.Q[k]; } return b + a ? b / (b + a) : 0.5; };
-  const i1 = imb(0.001), i3 = imb(0.003);
+  const imbN = n => { let b = 0, a = 0; for (let k = 0; k < cur.P.length; k++) { if (cur.Q[k] > 0 && k < Math.min(n, cur.nb)) b += cur.Q[k]; else if (cur.Q[k] < 0 && k - cur.nb < n) a -= cur.Q[k]; } return b + a ? b / (b + a) : 0.5; };
+  const i1 = ct ? imbN(3) : imb(0.001), i3 = ct ? imbN(1e9) : imb(0.003);
   const row = (lbl, v) => '<div class="press"><span>' + lbl + '</span><div class="pbar"><i style="width:' + Math.round(v * 100) + '%"></i></div><span>' + Math.round(v * 100) + " % acheteurs</span></div>";
   const verdict = i1 >= 0.6 && i3 >= 0.55 ? "Plus d'ordres d'achat que de vente près du prix : le carnet soutient le prix, tant que ces ordres restent en place."
     : i1 <= 0.4 && i3 <= 0.45 ? "Plus d'ordres de vente que d'achat près du prix : le carnet freine la hausse, tant que ces ordres restent en place."
     : "Carnet à peu près équilibré près du prix : pas d'avantage net d'un côté.";
-  $("hmImb").innerHTML = '<p class="act">' + verdict + "</p>" + row("±0,1 %", i1) + row("±0,3 %", i3) +
+  $("hmImb").innerHTML = '<p class="act">' + verdict + "</p>" + row(ct ? "3 niv." : "±0,1 %", i1) + row(ct ? "Tout" : "±0,3 %", i3) +
     '<p class="muted">Part des ordres d\'achat parmi tous les ordres en attente dans la tranche de prix, en vert les acheteurs, en rouge les vendeurs.</p>';
 }
 
