@@ -15,12 +15,13 @@ import * as trades from "../functions/api/trades/index.js";
 import * as tradeId from "../functions/api/trades/[id].js";
 import * as users from "../functions/api/admin/users/index.js";
 import * as userId from "../functions/api/admin/users/[id].js";
+import * as coach from "../functions/api/coach/index.js";
 
 const ROUTES = [
   [/^\/api\/auth\/status$/, status], [/^\/api\/auth\/setup$/, setup], [/^\/api\/auth\/register$/, register], [/^\/api\/auth\/login$/, login],
   [/^\/api\/auth\/logout$/, logout], [/^\/api\/auth\/me$/, me], [/^\/api\/auth\/password$/, password],
   [/^\/api\/data$/, dataAll], [/^\/api\/data\/(?<key>[^/]+)$/, dataKey],
-  [/^\/api\/trades$/, trades], [/^\/api\/trades\/(?<id>\d+)$/, tradeId],
+  [/^\/api\/coach$/, coach], [/^\/api\/trades$/, trades], [/^\/api\/trades\/(?<id>\d+)$/, tradeId],
   [/^\/api\/admin\/users$/, users, true], [/^\/api\/admin\/users\/(?<id>\d+)$/, userId, true], [/^\/api\/admin\/settings$/, settings, true],
 ];
 const OPEN = new Set(["/login", "/login.html", "/api/auth/login", "/api/auth/setup", "/api/auth/register", "/api/auth/status", "/favicon.svg"]);

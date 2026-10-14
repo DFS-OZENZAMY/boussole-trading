@@ -13,8 +13,11 @@ Plateforme d'aide au trading pour les équipes de traders, protégée par mot de
 | **Graphique et entrées** | Graphique en temps réel (EMA, volume, profil de volume, zones, signaux), plan de trade, entrées proposées, vue TradingView Pepperstone |
 | **Liquidité** | Carte du carnet d'ordres au fil du temps (style heatmap) : murs d'ordres et depuis quand ils tiennent, transactions au marché, carnet actuel, déséquilibre acheteurs / vendeurs près du prix |
 | **Footprint** | Volumes achetés et vendus au marché prix par prix dans chaque bougie (1 min à 1 h) : delta, delta cumulé, POC, déséquilibres en diagonale et empilés, enchères inachevées, signaux d'absorption et de divergence |
+| **Scanner** | Tous les marchés suivis classés par qualité de configuration (alignement des unités de temps, signal récent, zone proche, volatilité) |
+| **Fiabilité des signaux** | Rejeu historique des signaux de l'application : réussite, moyenne en R, profit factor, creux maximal, avec ou sans filtre de tendance |
 | **Ma position** | Suivi en continu avec verdict (saine, vigilance, sortie conseillée) et propositions pour sécuriser les gains en déplaçant le stop |
 | **Journal** | Chaque position clôturée est enregistrée : statistiques, courbe des résultats en R, résultats par configuration, émotions, respect des règles, export CSV |
+| **Performance** | Analyse détaillée du journal (par configuration, émotion, session, jour, règles, rang dans la journée), enseignements automatiques et coach IA |
 | **Calcul du risque** | Taille de position en lots selon le capital, le risque par trade et la distance du stop |
 | **Réglages** | Source des données (Binance, Twelve Data, cTrader), règles du jour, mot de passe, notifications |
 | **Équipe** | Réservée aux administrateurs : valider ou refuser les demandes de compte, ouvrir ou fermer les inscriptions, créer des comptes, réinitialiser un mot de passe, désactiver ou supprimer un compte |
@@ -52,6 +55,14 @@ Le dossier `functions/` contient les mêmes API au format Cloudflare Pages : la 
 | Binance (PAXG/USDT) | Or (proxy) | Oui, tick par tick | Réel (marché PAXG) | Sans clé |
 | Twelve Data | XAU/USD, QQQ, NDX | Toutes les 10 min | QQQ seulement | Clé gratuite ; NDX payant |
 | **cTrader Open API** | Or, Nasdaq (ton broker) | Oui, tick par tick | Volume en ticks | Ton compte cTrader, en lecture seule |
+
+### Coach IA
+
+La page **Performance** propose un bilan rédigé par l'IA à partir du journal. Pour l'activer, ajoute au Worker Cloudflare un secret `ANTHROPIC_API_KEY` (Workers, boussole-trading, Settings, Variables and Secrets), ou en ligne de commande : `npx wrangler secret put ANTHROPIC_API_KEY`. La variable facultative `COACH_MODEL` permet de choisir le modèle (par défaut `claude-sonnet-5-5`). Un bilan par utilisateur toutes les 10 minutes au maximum.
+
+### Mode prop firm
+
+Dans les réglages : limites de perte journalière et totale (fixe ou suiveuse), objectif, jours minimum, heure de début de journée. Le solde est lu sur le compte cTrader (solde, positions ouvertes, transactions du jour), ou calculé depuis le journal, ou saisi à la main.
 
 Avec des accès cTrader enregistrés, la liste des marchés propose aussi **tous les instruments du compte**, groupés par classe d'actifs (liste mise en cache sur l'appareil et rafraîchie une fois par jour). Les prix s'affichent avec le nombre de décimales du symbole chez le broker.
 
