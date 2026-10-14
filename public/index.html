@@ -403,6 +403,35 @@ dialog .row-btns .left{margin-right:auto}
 .conf,.pos,.flow,.trade{margin-top:16px}
 .view .grid{margin-top:16px}
 .view details{margin-top:12px}
+/* ----- Liquidité (carte du carnet d'ordres) ----- */
+.hm-panel{background:#0E1828;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.hm-wrap{position:relative;height:540px;touch-action:pan-y}
+.hm-wrap canvas{display:block;width:100%;height:100%;cursor:crosshair}
+.hm-empty{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:#C9D2DF;font-size:15px;background:#0E1828}
+.hm-empty[hidden]{display:none}
+.hm-empty div{max-width:52ch}
+.hm-empty b{display:block;color:#fff;font-size:17px;margin-bottom:6px}
+.hm-empty a{color:#E6C46A;font-weight:600}
+.hm-tip{position:absolute;pointer-events:none;background:rgba(10,18,32,.94);color:#E9EDF4;border:1px solid #2E3A4C;border-radius:6px;padding:7px 10px;font-size:12px;line-height:1.45;white-space:nowrap;z-index:2}
+.hm-tip[hidden]{display:none}
+.hm-tip b{color:#fff}
+.hm-scale{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;padding:10px 14px;border-top:1px solid #22304A;color:#AEB8C8;font-size:12px}
+.hm-scale .ramp{width:140px;height:8px;border-radius:4px;background:linear-gradient(90deg,#132238,#17457A,#1F86A6,#E0B23C,#FFF4D6)}
+.hm-scale .k{display:inline-flex;align-items:center;gap:6px}
+.hm-scale .k i{display:inline-block;width:10px;height:10px;border-radius:50%}
+.hm-tools{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.hm-tools label.chk input[type=range]{width:110px;padding:0;accent-color:var(--gold)}
+.hm-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:16px}
+.hm-grid .press{grid-template-columns:62px 1fr 128px}
+@media (max-width:980px){.hm-grid{grid-template-columns:1fr}}
+.walls ul{list-style:none;margin:0;padding:0}
+.walls li{display:grid;grid-template-columns:1.5fr 1fr 1.3fr 1fr;gap:8px;padding:8px 0 8px 10px;border-top:1px solid var(--line);border-left:4px solid var(--flat);font-size:13px;align-items:baseline}
+.walls li.sell{border-left-color:var(--bear)} .walls li.buy{border-left-color:var(--bull)}
+.walls li span{color:var(--mute)}
+.walls li.head{border-left-color:transparent;border-top:0;font-size:12px;color:var(--mute);padding-top:0}
+.walls h4{margin:14px 0 6px;font-size:14px}
+.walls h4:first-child{margin-top:0}
+@media (max-width:560px){.hm-wrap{height:400px}.walls li{grid-template-columns:1fr 1fr}}
 /* ----- Mobile ----- */
 @media (max-width:1100px){.day-grid,.j-grid,.rk,.set-grid{grid-template-columns:1fr}}
 @media (max-width:900px){
@@ -431,6 +460,7 @@ dialog .row-btns .left{margin-right:auto}
       <button type="button" data-view="journee"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5 13 13l-4.5 2.5L11 11z"/></svg><span>Ma journée</span></button>
       <button type="button" data-view="marche"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Marché</span></button>
       <button type="button" data-view="graphique"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M17 6v12"/><rect x="5" y="8" width="4" height="7" rx="1"/><rect x="15" y="9" width="4" height="5" rx="1"/></svg><span>Graphique et entrées</span></button>
+      <button type="button" data-view="liquidite"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h7M3 9h12M3 13h5M3 17h14M3 21h9"/><path d="M19 4v16"/></svg><span>Liquidité</span></button>
       <button type="button" data-view="position"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.8"/></svg><span>Ma position</span><i class="dot" id="navPosDot"></i></button>
       <div class="sep"></div>
       <button type="button" data-view="journal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11M9 8h6"/></svg><span>Journal</span></button>
@@ -585,6 +615,44 @@ dialog .row-btns .left{margin-right:auto}
     <p class="muted" id="propCtx">En attente des données.</p>
     <div class="props" id="props"></div>
   </section>
+      </div>
+
+      <div class="view" id="view-liquidite" data-view="liquidite" hidden>
+        <div class="vh"><div><h2>Liquidité</h2><p>Les ordres en attente dans le carnet, prix par prix, au fil du temps. Plus une bande est claire, plus des intervenants attendent à ce prix.</p></div>
+          <div class="hm-tools">
+            <div class="seg" id="hmSpeed" role="group" aria-label="Vitesse de défilement">
+              <button type="button" data-ms="250" aria-pressed="false">Rapide</button>
+              <button type="button" data-ms="1000" aria-pressed="true">Normal</button>
+              <button type="button" data-ms="3000" aria-pressed="false">Lent</button>
+            </div>
+            <div class="seg" role="group" aria-label="Plage de prix">
+              <button type="button" id="hmOut" aria-label="Élargir la plage de prix">−</button>
+              <button type="button" id="hmCenter">Recentrer</button>
+              <button type="button" id="hmIn" aria-label="Resserrer la plage de prix">+</button>
+            </div>
+            <label class="chk">Contraste <input type="range" id="hmGain" min="0.3" max="3" step="0.1" value="1"></label>
+            <label class="chk"><input type="checkbox" id="hmTrades" checked> Transactions</label>
+            <button type="button" class="ghost" id="hmPause" aria-pressed="false">Figer</button>
+          </div>
+        </div>
+        <section class="hm-panel" aria-label="Carte de liquidité">
+          <div class="hm-wrap" id="hmWrap">
+            <canvas id="hmCanvas" role="img" aria-label="Carte des ordres en attente au fil du temps"></canvas>
+            <div class="hm-tip" id="hmTip" hidden></div>
+            <div class="hm-empty" id="hmEmpty"><div><b>Carnet d'ordres</b>En attente des données.</div></div>
+          </div>
+          <div class="hm-scale">
+            <span class="k">Peu d'ordres <span class="ramp"></span> Beaucoup d'ordres</span>
+            <span class="k"><i style="background:#fff"></i>Prix</span>
+            <span class="k" id="hmKeyTrades"><i style="background:#46C383"></i>Achats au marché <i style="background:#EE6B57;margin-left:6px"></i>Ventes au marché</span>
+            <span class="k">À droite : le carnet actuel, acheteurs en vert, vendeurs en rouge</span>
+          </div>
+        </section>
+        <div class="hm-grid">
+          <section class="card"><div class="card-h"><h3>Murs d'ordres</h3><span class="muted" id="hmWallsAge" style="margin:0"></span></div><div id="hmWalls"></div></section>
+          <section class="card"><h3>Déséquilibre du carnet</h3><div id="hmImb"></div></section>
+        </div>
+        <p class="muted" id="hmQuality"></p>
       </div>
 
       <div class="view" id="view-position" data-view="position" hidden>
@@ -761,7 +829,14 @@ dialog .row-btns .left{margin-right:auto}
     <summary>Comment les zones et les afflux de volume sont calculés</summary>
     <p>Les zones viennent des 200 dernières bougies de l'unité affichée. Chaque sommet ou creux local (où le prix s'est retourné) est un point de réaction ; il compte davantage s'il s'est formé avec un fort volume, une longue mèche de rejet, ou récemment. Les points proches (moins de 0,35 ATR) sont regroupés en zones, renforcées par le volume échangé à ces prix. Une zone au-dessus du prix est vendeuse (les vendeurs y sont intervenus), une zone en dessous est acheteuse. Le profil de volume, à droite du graphique, montre combien a été échangé à chaque prix ; la barre dorée marque le prix le plus échangé.</p>
     <p>L'afflux de volume compare le volume de la dernière minute à la moyenne par minute des deux dernières heures. À partir de 3 fois la normale, une alerte se déclenche, avec la part d'acheteurs et de vendeurs et ce que cela peut annoncer selon les zones proches et la tendance. Sur le graphique, les ronds dorés marquent les bougies à volume exceptionnel (plus de 2,5 fois la moyenne) ; « Absorption » signale un gros volume sur une petite bougie, souvent signe qu'un gros intervenant absorbe les ordres d'en face.</p>
-    <p>Il n'existe pas de carnet d'ordres public pour l'or au comptant ou les CFD : ces zones sont déduites de là où le marché a réellement réagi, pas des ordres en attente. Elles indiquent des endroits à surveiller, pas des niveaux garantis.</p>
+    <p>Ces zones sont déduites de là où le marché a réellement réagi, pas des ordres en attente : pour voir les ordres posés dans le carnet, ouvre la vue Liquidité. Elles indiquent des endroits à surveiller, pas des niveaux garantis.</p>
+  </details>
+  <details>
+    <summary>Comment lire la carte de liquidité</summary>
+    <p>La vue Liquidité montre le carnet d'ordres : les ordres d'achat et de vente posés à l'avance, qui attendent qu'un prix soit atteint. Chaque colonne est une photo du carnet (toutes les 0,25, 1 ou 3 secondes selon la vitesse choisie), les plus récentes à droite. Plus une case est claire, plus il y a d'ordres en attente à ce prix ; une bande claire et continue est un « mur » d'ordres qui tient dans le temps. La ligne blanche suit le prix. Avec Binance, les ronds verts et rouges sont les transactions exécutées au marché, acheteurs agressifs en vert et vendeurs agressifs en rouge, leur taille suit le volume échangé.</p>
+    <p>À droite de la carte, le carnet actuel : les barres vertes sont les ordres d'achat sous le prix, les rouges les ordres de vente au-dessus. Survole la carte pour lire la quantité exacte à un prix et à un instant donnés. Utilise − et + pour élargir ou resserrer la plage de prix (Ctrl ou Maj et la molette fonctionnent aussi), le curseur Contraste pour faire ressortir les petits ordres, et Figer pour étudier la carte sans qu'elle défile (l'enregistrement continue en arrière-plan).</p>
+    <p>Comment s'en servir : un mur qui tient au-dessus du prix peut freiner la hausse, un mur qui tient en dessous peut soutenir le prix. Quand le prix arrive sur un mur, regarde s'il est absorbé (les transactions s'accumulent et le mur fond, souvent avant une cassure) ou s'il tient (le prix rebondit). Un mur qui disparaît juste avant d'être touché était peut-être là pour impressionner : c'est pourquoi la liste des murs indique depuis combien de temps chacun est présent.</p>
+    <p>Limites : avec Binance, c'est le carnet réel de PAXG/USDT, un marché beaucoup plus petit que l'or. Avec cTrader, c'est la profondeur fournie par ton broker, qui reflète les prix de ses fournisseurs de liquidité et non un carnet central. Dans les deux cas, la carte indique où regarder, pas ce que fera le marché. Pour le vrai carnet de l'or et du Nasdaq, il faut les contrats à terme du CME (GC et NQ) et un abonnement de données payant.</p>
   </details>
   <details>
     <summary>Comment le score est calculé</summary>
@@ -937,6 +1012,7 @@ function resetData() {
   for (const tf of TFS) { delete candles[tf.id]; delete errors[tf.id]; }
   chartArr = null; shownTf = null; sigKey = null; prevPx = null; lastGlobal = 0; lastBiasKey = 0;
   if (typeof resetFlow === "function") { resetFlow(); zoneCache = null; $("volAlert").hidden = true; }
+  if (typeof bookReset === "function") bookReset();
   if (cs) { cs.setMarkers([]); for (const pl of propLines) { try { cs.removePriceLine(pl); } catch {} } propLines = []; }
   $("price").textContent = "—"; $("updated").textContent = "Pas encore chargé";
   $("vTitle").textContent = "En attente des données"; $("vScore").textContent = "";
@@ -1083,7 +1159,7 @@ function startLive() {
   ws.onopen = () => { wsRetry = 0; setLive("on", "En direct"); };
   ws.onmessage = ev => {
     let m; try { m = JSON.parse(ev.data); } catch { return; }
-    if (m.data && m.data.e === "aggTrade") { applyTick(+m.data.p, m.data.T, +m.data.q, m.data.m ? -1 : 1); return; }
+    if (m.data && m.data.e === "aggTrade") { applyTick(+m.data.p, m.data.T, +m.data.q, m.data.m ? -1 : 1); bookTrade(+m.data.p, +m.data.q, m.data.m ? -1 : 1); return; }
     const k = m.data && m.data.k; if (!k) return;
     const tf = TFS.find(x => x.bn === k.i); const arr = tf && candles[tf.id]; if (!arr || !arr.length) return;
     const bar = { t: k.t, o: +k.o, h: +k.h, l: +k.l, c: +k.c, v: +k.v };
@@ -1124,7 +1200,7 @@ const CT_ERR = {
   CANT_ROUTE_REQUEST: "cTrader ne peut pas joindre le serveur du broker pour l'instant.",
 };
 const ct = { ws: null, ready: false, pending: new Map(), seq: 0, hb: null, account: null, accLabel: "", cfgKey: null,
-             symbolId: null, symbolName: null, symAcc: null, symbols: null, spotsOn: false, retry: 0, rtimer: null };
+             symbolId: null, symbolName: null, symAcc: null, symbols: null, spotsOn: false, depthOn: false, retry: 0, rtimer: null };
 
 function ctCfg() {
   return { clientId: $("ctId").value.trim(), clientSecret: $("ctSecret").value.trim(), token: $("ctToken").value.trim(),
@@ -1148,7 +1224,7 @@ function ctClose() {
   if (ct.ws) { ct.ws.onclose = null; try { ct.ws.close(); } catch {} }
   for (const p of ct.pending.values()) { clearTimeout(p.to); p.rej(new Error("Connexion cTrader fermée.")); }
   ct.pending.clear();
-  Object.assign(ct, { ws: null, ready: false, account: null, cfgKey: null, symbols: null, symAcc: null, spotsOn: false });
+  Object.assign(ct, { ws: null, ready: false, account: null, cfgKey: null, symbols: null, symAcc: null, spotsOn: false, depthOn: false });
 }
 function ctConnect(c) {
   return new Promise((resolve, reject) => {
@@ -1168,6 +1244,7 @@ function ctConnect(c) {
         if (ct.spotsOn && String(p.symbolId) === String(ct.symbolId) && p.bid != null) { const bid = Number(p.bid) / 1e5, sd = flow.prevBid == null ? 0 : Math.sign(bid - flow.prevBid); flow.prevBid = bid; applyTick(bid, Number(p.timestamp) || Date.now(), 1, sd); }
         return;
       }
+      if (t === 2155) { bookCtEvent(p); return; } /* profondeur de marché */
       if (t === 2147 || t === 2148) { setStatus("cTrader a fermé la session" + (p.reason ? " : " + p.reason : "") + ". Vérifie ton jeton d'accès.", true); return; }
       const pend = m.clientMsgId && ct.pending.get(m.clientMsgId);
       if (!pend) return;
@@ -1180,7 +1257,7 @@ function ctConnect(c) {
       clearInterval(ct.hb);
       for (const p of ct.pending.values()) { clearTimeout(p.to); p.rej(new Error("Connexion cTrader fermée.")); }
       ct.pending.clear();
-      Object.assign(ct, { ws: null, ready: false, account: null, cfgKey: null, spotsOn: false });
+      Object.assign(ct, { ws: null, ready: false, account: null, cfgKey: null, spotsOn: false, depthOn: false });
       if (!opened) reject(new Error("Impossible de joindre le serveur cTrader."));
       if (wasLive && $("auto").checked && curSrc().kind === "ctrader") {
         const delay = Math.min(30000, 1000 * 2 ** ct.retry++);
@@ -1775,20 +1852,432 @@ function stopsInitUI() {
   });
 }
 
+/* ---------- Liquidité : carte du carnet d'ordres au fil du temps ---------- */
+const HM = { colW: 3, axisW: 74, profW: 120, timeH: 22, maxCols: 1500, keep: 500 };
+const book = { kind: null, gen: 0, ws: null, sym: null, bids: new Map(), asks: new Map(), ctq: new Map(),
+  buf: [], lastU: 0, synced: false, needFirst: false, retry: 0, rtimer: null, state: "off", err: "",
+  cols: [], trade: null, colMs: 1000, stimer: null, vc: null, base: null, zoom: 1, gain: 1, ref: 0,
+  paused: false, pauseCol: null, draw: null, hover: null };
+let hmCv = null, hmCtx = null, hmGridCv = null, hmDims = null;
+
+const hmUnit = () => inst === "gold" ? "oz" : "unités";
+function hmSize(s) { return s >= 1e6 ? fmt(s / 1e6, 1) + " M" : s >= 1e4 ? fmt(s / 1e3, 1) + " k" : fmt(s, s < 10 ? 2 : s < 100 ? 1 : 0); }
+function niceStep(x) { if (!(x > 0)) return 0.01; const e = Math.pow(10, Math.floor(Math.log10(x))), f = x / e; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * e; }
+function hmVisible() { const v = $("view-liquidite"); return !!v && !v.hidden && !document.hidden; }
+function hmClock(t, sec) { const d = new Date(t); return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0") + (sec ? ":" + String(d.getSeconds()).padStart(2, "0") : ""); }
+function hmAgo(ms) { const s = Math.round(ms / 1000); return s < 60 ? s + " s" : Math.floor(s / 60) + " min" + (s % 60 ? " " + (s % 60) + " s" : ""); }
+
+/* Palette : du fond bleu nuit (vide) au laiton puis au blanc chaud (gros ordres) */
+const HM_LUT = (() => {
+  const st = [[0, [19, 34, 56]], [0.3, [23, 69, 122]], [0.55, [31, 134, 166]], [0.8, [224, 178, 60]], [1, [255, 244, 214]]];
+  const L = new Uint8ClampedArray(256 * 3);
+  for (let i = 0; i < 256; i++) {
+    const v = i / 255; let k = 0; while (k < st.length - 2 && v > st[k + 1][0]) k++;
+    const [a, ca] = st[k], [b, cb] = st[k + 1], f = (v - a) / (b - a);
+    for (let j = 0; j < 3; j++) L[i * 3 + j] = Math.round(ca[j] + (cb[j] - ca[j]) * f);
+  }
+  L[0] = 14; L[1] = 24; L[2] = 40; /* aucun ordre : couleur du fond */
+  return L;
+})();
+
+/* ----- cycle de vie ----- */
+function bookReset() { book.cols = []; book.trade = null; book.vc = null; book.base = null; book.ref = 0; book.pauseCol = null; hmDraw(); hmSummary(); }
+function bookStop() {
+  book.gen++; clearTimeout(book.rtimer); clearInterval(book.stimer); book.stimer = null;
+  if (book.ws) { book.ws.onclose = null; try { book.ws.close(); } catch {} book.ws = null; }
+  if (ct.depthOn && ct.ws && ct.ws.readyState === 1) ctSend(2158, { ctidTraderAccountId: ct.account, symbolId: [Number(ct.symbolId)] }, 10000).catch(() => {});
+  ct.depthOn = false;
+  book.kind = null; book.bids.clear(); book.asks.clear(); book.ctq.clear(); book.buf = []; book.synced = false; book.trade = null;
+  book.state = "off"; book.err = "";
+  hmDraw();
+}
+function bookStart() {
+  bookStop();
+  const S = curSrc(), g = book.gen;
+  if (S.kind === "binance") { book.kind = "binance"; book.sym = S.sym; book.retry = 0; bookBnConnect(g); }
+  else if (S.kind === "ctrader") { book.kind = "ctrader"; bookCtSubscribe(g); }
+  else { hmDraw(); return; }
+  book.stimer = setInterval(bookSample, book.colMs);
+}
+
+/* ----- Binance : instantané REST + mises à jour différentielles, selon la méthode officielle ----- */
+function bookBnConnect(g) {
+  book.state = "wait"; book.synced = false; book.buf = []; hmDraw();
+  const ws = new WebSocket("wss://data-stream.binance.vision/ws/" + book.sym.toLowerCase() + "@depth@100ms");
+  book.ws = ws;
+  ws.onopen = () => { if (g === book.gen) bookBnSnapshot(g); };
+  ws.onmessage = ev => {
+    if (g !== book.gen) return;
+    let m; try { m = JSON.parse(ev.data); } catch { return; }
+    if (m.e !== "depthUpdate") return;
+    if (!book.synced) { book.buf.push(m); if (book.buf.length > 3000) book.buf.shift(); return; }
+    bookBnApply(m, g);
+  };
+  ws.onclose = () => {
+    if (g !== book.gen) return;
+    book.ws = null; book.synced = false; book.state = "wait";
+    const delay = Math.min(30000, 1000 * 2 ** book.retry++);
+    book.err = "Carnet coupé, reconnexion dans " + Math.round(delay / 1000) + " s.";
+    book.rtimer = setTimeout(() => { if (g === book.gen) bookBnConnect(g); }, delay);
+    hmDraw();
+  };
+  ws.onerror = () => { try { ws.close(); } catch {} };
+}
+async function bookBnSnapshot(g) {
+  try {
+    const r = await fetch("https://data-api.binance.vision/api/v3/depth?symbol=" + book.sym + "&limit=1000");
+    if (!r.ok) throw new Error("Binance a répondu " + r.status + " pour le carnet d'ordres.");
+    const j = await r.json();
+    if (g !== book.gen) return;
+    book.bids.clear(); book.asks.clear();
+    for (const [p, q] of j.bids) book.bids.set(+p, +q);
+    for (const [p, q] of j.asks) book.asks.set(+p, +q);
+    book.lastU = j.lastUpdateId; book.needFirst = true; book.synced = true;
+    const pend = book.buf; book.buf = [];
+    for (const e of pend) if (!bookBnApply(e, g)) return;
+    book.state = "on"; book.err = ""; book.retry = 0;
+  } catch (e) {
+    if (g !== book.gen) return;
+    book.state = "err";
+    book.err = e.message === "Failed to fetch" ? "Impossible de charger le carnet Binance (réseau ou blocage du navigateur). Nouvel essai dans 5 s." : e.message;
+    book.rtimer = setTimeout(() => { if (g === book.gen) bookBnSnapshot(g); }, 5000);
+    hmDraw();
+  }
+}
+function bookBnApply(e, g) {
+  if (e.u <= book.lastU) return true;
+  if (book.needFirst ? e.U > book.lastU + 1 : e.U !== book.lastU + 1) {
+    /* trou dans le flux : on reprend un instantané */
+    book.synced = false; book.buf = [e]; book.state = "wait";
+    clearTimeout(book.rtimer); book.rtimer = setTimeout(() => { if (g === book.gen) bookBnSnapshot(g); }, 400);
+    return false;
+  }
+  book.needFirst = false; book.lastU = e.u;
+  for (const [p, q] of e.b) { const x = +p, y = +q; if (y > 0) book.bids.set(x, y); else book.bids.delete(x); }
+  for (const [p, q] of e.a) { const x = +p, y = +q; if (y > 0) book.asks.set(x, y); else book.asks.delete(x); }
+  if (book.state !== "on") { book.state = "on"; book.err = ""; }
+  return true;
+}
+function bookTrade(p, q, side) {
+  if (book.kind !== "binance" || !(q > 0)) return;
+  const t = book.trade || (book.trade = { buy: 0, sell: 0, pv: 0, last: p });
+  if (side > 0) t.buy += q; else t.sell += q;
+  t.pv += p * q; t.last = p;
+}
+
+/* ----- cTrader : profondeur de marché du broker ----- */
+async function bookCtSubscribe(g) {
+  book.state = "wait"; hmDraw();
+  try {
+    if (!ct.ready || ct.symbolId == null) throw new Error("connecte d'abord ton compte cTrader.");
+    try { await ctSend(2156, { ctidTraderAccountId: ct.account, symbolId: [Number(ct.symbolId)] }); }
+    catch (e) { if (!/ALREADY_SUBSCRIBED/.test(e.message)) throw e; }
+    if (g !== book.gen) return;
+    ct.depthOn = true;
+    setTimeout(() => {
+      if (g === book.gen && !book.ctq.size) { book.state = "err"; book.err = "Aucune profondeur reçue : ton broker ne diffuse peut-être pas le carnet de " + ct.symbolName + " via l'Open API."; hmDraw(); }
+    }, 10000);
+  } catch (e) {
+    if (g !== book.gen) return;
+    book.state = "err"; book.err = "Profondeur indisponible sur cTrader : " + e.message; hmDraw();
+  }
+}
+function bookCtEvent(p) {
+  if (book.kind !== "ctrader" || String(p.symbolId) !== String(ct.symbolId)) return;
+  for (const id of p.deletedQuotes || []) book.ctq.delete(String(id));
+  for (const q of p.newQuotes || []) {
+    const isBid = q.bid != null, px = Number(isBid ? q.bid : q.ask) / 1e5, s = Number(q.size || 0) / 100;
+    if (!(px > 0) || !(s > 0)) continue;
+    book.ctq.set(String(q.id), { p: px, s, b: isBid });
+  }
+  if (book.state !== "on" && book.ctq.size) { book.state = "on"; book.err = ""; }
+}
+
+/* ----- échantillonnage : une colonne de la carte par intervalle ----- */
+function bookSides() {
+  if (book.kind === "ctrader") {
+    const b = new Map(), a = new Map();
+    for (const q of book.ctq.values()) { const m = q.b ? b : a; m.set(q.p, (m.get(q.p) || 0) + q.s); }
+    return { b, a };
+  }
+  return { b: book.bids, a: book.asks };
+}
+function bookSample() {
+  if (!book.kind || book.state !== "on") return;
+  const { b, a } = bookSides();
+  if (!b.size || !a.size) return;
+  const bl = [...b.entries()].sort((x, y) => y[0] - x[0]).slice(0, HM.keep);
+  const al = [...a.entries()].sort((x, y) => x[0] - y[0]).slice(0, HM.keep);
+  const bb = bl[0][0], ba = al[0][0], mid = (bb + ba) / 2;
+  const n = bl.length + al.length, P = new Float64Array(n), Q = new Float32Array(n);
+  let i = 0;
+  for (const [p, s] of bl) { P[i] = p; Q[i++] = s; }
+  for (const [p, s] of al) { P[i] = p; Q[i++] = -s; }
+  const tr = book.trade; book.trade = null;
+  const vol = tr ? tr.buy + tr.sell : 0;
+  book.cols.push({ t: Date.now(), bb, ba, mid, P, Q, nb: bl.length, buy: tr ? tr.buy : 0, sell: tr ? tr.sell : 0, vw: vol ? tr.pv / vol : null, last: tr ? tr.last : null });
+  if (book.cols.length > HM.maxCols) book.cols.shift();
+  /* nettoyage des niveaux très éloignés qui ne servent plus */
+  if (book.kind === "binance" && book.cols.length % 120 === 0) {
+    for (const p of book.bids.keys()) if (p < mid * 0.95) book.bids.delete(p);
+    for (const p of book.asks.keys()) if (p > mid * 1.05) book.asks.delete(p);
+  }
+  if (hmVisible() && !book.paused) { hmDraw(); hmSummary(); }
+}
+
+/* ----- rendu ----- */
+function hmInit() {
+  hmCv = $("hmCanvas"); hmCtx = hmCv.getContext("2d");
+  new ResizeObserver(hmResize).observe($("hmWrap"));
+  const sp = Number(store("hm-speed")) || 1000; hmSetSpeed(sp, true);
+  const gn = Number(store("hm-gain")); if (gn) { book.gain = gn; $("hmGain").value = gn; }
+  $("hmTrades").checked = store("hm-trades") !== "0";
+  $("hmSpeed").addEventListener("click", e => { const b = e.target.closest("button[data-ms]"); if (b) hmSetSpeed(Number(b.dataset.ms)); });
+  $("hmIn").addEventListener("click", () => hmZoom(1.5));
+  $("hmOut").addEventListener("click", () => hmZoom(1 / 1.5));
+  $("hmCenter").addEventListener("click", () => { book.vc = null; book.zoom = 1; book.ref = 0; hmDraw(); });
+  $("hmGain").addEventListener("input", () => { book.gain = Number($("hmGain").value); store("hm-gain", String(book.gain)); hmDraw(); });
+  $("hmTrades").addEventListener("change", () => { store("hm-trades", $("hmTrades").checked ? "1" : "0"); hmDraw(); });
+  $("hmPause").addEventListener("click", () => {
+    book.paused = !book.paused; book.pauseCol = book.paused ? book.cols[book.cols.length - 1] || null : null;
+    $("hmPause").setAttribute("aria-pressed", String(book.paused)); $("hmPause").textContent = book.paused ? "Reprendre" : "Figer";
+    hmDraw(); hmSummary();
+  });
+  hmCv.addEventListener("wheel", e => { if (!e.ctrlKey && !e.shiftKey) return; e.preventDefault(); hmZoom(e.deltaY < 0 ? 1.25 : 0.8); }, { passive: false });
+  hmCv.addEventListener("mousemove", e => { const r = hmCv.getBoundingClientRect(); book.hover = { x: e.clientX - r.left, y: e.clientY - r.top }; hmTip(); });
+  hmCv.addEventListener("mouseleave", () => { book.hover = null; $("hmTip").hidden = true; });
+  document.addEventListener("visibilitychange", () => { if (hmVisible()) { hmDraw(); hmSummary(); } });
+}
+function hmSetSpeed(ms, quiet) {
+  if (![250, 1000, 3000].includes(ms)) ms = 1000;
+  document.querySelectorAll("#hmSpeed button").forEach(b => b.setAttribute("aria-pressed", String(Number(b.dataset.ms) === ms)));
+  if (ms === book.colMs && quiet) return;
+  book.colMs = ms; store("hm-speed", String(ms));
+  if (!quiet) { book.cols = []; book.trade = null; book.pauseCol = null; }
+  if (book.stimer) { clearInterval(book.stimer); book.stimer = setInterval(bookSample, ms); }
+  hmDraw(); hmSummary();
+}
+function hmZoom(f) { book.zoom = Math.min(20, Math.max(0.1, book.zoom * f)); book.vc = null; book.ref = 0; hmDraw(); }
+function hmResize() {
+  const w = $("hmWrap"); if (!w || !hmCv) return;
+  const r = w.getBoundingClientRect(); if (!r.width || !r.height) return;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  hmCv.width = Math.round(r.width * dpr); hmCv.height = Math.round(r.height * dpr);
+  hmDims = { W: r.width, H: r.height, dpr };
+  HM.profW = r.width < 600 ? 64 : 120; HM.axisW = r.width < 600 ? 62 : 74;
+  hmDraw();
+}
+function hmEmptyState() {
+  const box = $("hmEmpty"), S = curSrc();
+  let title = "", text = "";
+  if (S.kind === "twelve") { title = "Pas de carnet d'ordres avec cette source"; text = "Twelve Data ne fournit que des bougies. Choisis PAXG/USDT sur Binance ou ton compte cTrader dans les <a href=\"#\" data-go=\"reglages\">réglages</a> pour voir la liquidité."; }
+  else if (!$("auto").checked) { title = "Temps réel arrêté"; text = "Active le temps réel dans les <a href=\"#\" data-go=\"reglages\">réglages</a> pour suivre le carnet d'ordres."; }
+  else if (book.state === "err") { title = "Carnet indisponible"; text = book.err; }
+  else if (!book.cols.length) { title = "Lecture du carnet d'ordres"; text = book.err || "Connexion au carnet, la carte se remplit de droite à gauche au fil des secondes."; }
+  box.hidden = !title;
+  if (title) box.innerHTML = "<div><b>" + title + "</b>" + text + "</div>";
+}
+function hmDraw() {
+  if (!hmCv || !hmDims || !hmVisible()) return;
+  hmEmptyState();
+  const { W, H, dpr } = hmDims, c = hmCtx;
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.fillStyle = "#0E1828"; c.fillRect(0, 0, W, H);
+  book.draw = null;
+  let end = book.cols.length;
+  if (book.paused && book.pauseCol) { const k = book.cols.indexOf(book.pauseCol); if (k >= 0) end = k + 1; }
+  const hw = Math.max(60, W - HM.axisW - HM.profW), hh = H - HM.timeH;
+  const gw = Math.max(1, Math.floor(hw / HM.colW)), cols = book.cols.slice(Math.max(0, end - gw), end);
+  if (!cols.length) return;
+  const cur = cols[cols.length - 1], ref = cur.last != null ? cur.last : cur.mid;
+
+  /* plage de prix : ±0,25 % au zoom 1, recentrée quand le prix s'approche du bord */
+  if (!book.base) book.base = cur.mid * 0.0025;
+  const vr = book.base / book.zoom;
+  if (book.vc == null || Math.abs(ref - book.vc) > vr * 0.6) book.vc = ref;
+  const gr0 = Math.max(24, Math.floor(hh / 3));
+  const step = Math.max(0.01, niceStep(2 * vr / gr0));
+  const lo = Math.floor((book.vc - vr) / step) * step, gr = Math.max(1, Math.ceil((book.vc + vr - lo) / step)), span = gr * step;
+  const Y = p => hh - (p - lo) / span * hh;
+  const off = gw - cols.length, cw = HM.colW, heatW = gw * cw;
+
+  /* grille temps × prix */
+  const G = new Float32Array(gw * gr);
+  for (let ci = 0; ci < cols.length; ci++) {
+    const P = cols[ci].P, Q = cols[ci].Q, x = off + ci;
+    for (let k = 0; k < P.length; k++) {
+      const r = Math.floor((P[k] - lo) / step + 1e-9);
+      if (r >= 0 && r < gr) G[r * gw + x] += Math.abs(Q[k]);
+    }
+  }
+  const nz = []; for (let k = 0; k < G.length; k++) if (G[k] > 0) nz.push(G[k]);
+  if (nz.length) { nz.sort((a, b) => a - b); const q = nz[Math.min(nz.length - 1, Math.floor(nz.length * 0.97))]; book.ref = book.ref ? book.ref * 0.75 + q * 0.25 : q; }
+  if (!hmGridCv) hmGridCv = document.createElement("canvas");
+  if (hmGridCv.width !== gw || hmGridCv.height !== gr) { hmGridCv.width = gw; hmGridCv.height = gr; }
+  const gx = hmGridCv.getContext("2d"), img = gx.createImageData(gw, gr), D = img.data, L = HM_LUT, rf = book.ref || 1, gain = book.gain;
+  for (let r = 0; r < gr; r++) {
+    const row = (gr - 1 - r) * gw;
+    for (let x = 0; x < gw; x++) {
+      const v = G[r * gw + x];
+      const li = v > 0 ? Math.max(1, Math.min(255, Math.round(Math.pow(Math.min(1, v / rf * gain), 0.55) * 255))) : 0;
+      const o = (row + x) * 4, l3 = li * 3;
+      D[o] = L[l3]; D[o + 1] = L[l3 + 1]; D[o + 2] = L[l3 + 2]; D[o + 3] = 255;
+    }
+  }
+  gx.putImageData(img, 0, 0);
+  c.imageSmoothingEnabled = false;
+  c.drawImage(hmGridCv, 0, 0, gw, gr, 0, 0, heatW, hh);
+
+  /* lignes de prix, prix suivi et transactions */
+  c.save(); c.beginPath(); c.rect(0, 0, heatW, hh); c.clip();
+  const ls = niceStep(span / 8), dec = step < 1 ? 2 : 1;
+  c.fillStyle = "rgba(255,255,255,.07)";
+  for (let p = Math.ceil(lo / ls) * ls; p <= lo + span; p += ls) c.fillRect(0, Math.round(Y(p)), heatW, 1);
+  c.lineWidth = 1.6; c.strokeStyle = "rgba(255,255,255,.92)"; c.lineJoin = "round"; c.beginPath();
+  cols.forEach((col, ci) => { const x = (off + ci) * cw + cw / 2, y = Y(col.last != null ? col.last : col.mid); ci ? c.lineTo(x, y) : c.moveTo(x, y); });
+  c.stroke();
+  if (book.kind === "binance" && $("hmTrades").checked) {
+    const vols = cols.map(k => k.buy + k.sell).filter(v => v > 0).sort((a, b) => a - b);
+    if (vols.length) {
+      const vref = vols[Math.min(vols.length - 1, Math.floor(vols.length * 0.9))];
+      cols.forEach((col, ci) => {
+        const v = col.buy + col.sell; if (!v || col.vw == null) return;
+        const rad = Math.max(1.8, Math.min(18, Math.sqrt(v / vref) * 7)), up = col.buy >= col.sell;
+        c.beginPath(); c.arc((off + ci) * cw + cw / 2, Y(col.vw), rad, 0, Math.PI * 2);
+        c.fillStyle = up ? "rgba(70,195,131,.5)" : "rgba(238,107,87,.5)"; c.fill();
+        c.lineWidth = 1; c.strokeStyle = up ? "#46C383" : "#EE6B57"; c.stroke();
+      });
+    }
+  }
+  c.restore();
+
+  /* carnet actuel à droite */
+  const px0 = heatW + 2, pw = HM.profW - 6;
+  c.fillStyle = "#0A1220"; c.fillRect(heatW, 0, HM.profW, hh);
+  const RB = new Float32Array(gr), RA = new Float32Array(gr);
+  for (let k = 0; k < cur.P.length; k++) {
+    const r = Math.floor((cur.P[k] - lo) / step + 1e-9); if (r < 0 || r >= gr) continue;
+    if (cur.Q[k] > 0) RB[r] += cur.Q[k]; else RA[r] -= cur.Q[k];
+  }
+  let mx = 0; for (let r = 0; r < gr; r++) mx = Math.max(mx, RB[r], RA[r]);
+  const rh = hh / gr;
+  if (mx) for (let r = 0; r < gr; r++) {
+    const yt = Y(lo + (r + 1) * step), hgt = Math.max(1, rh - (rh > 3 ? 1 : 0));
+    if (RB[r]) { c.fillStyle = "#2E9E6A"; c.fillRect(px0, yt, Math.max(1, RB[r] / mx * pw), hgt); }
+    if (RA[r]) { c.fillStyle = "#C9503F"; c.fillRect(px0, yt, Math.max(1, RA[r] / mx * pw), hgt); }
+  }
+
+  /* axe des prix */
+  const ax = heatW + HM.profW;
+  c.fillStyle = "#0E1828"; c.fillRect(ax, 0, W - ax, H);
+  c.font = "11px Archivo, system-ui, sans-serif"; c.textBaseline = "middle"; c.fillStyle = "#AEB8C8";
+  for (let p = Math.ceil(lo / ls) * ls; p <= lo + span; p += ls) { const y = Y(p); if (y > 8 && y < hh - 8) c.fillText(fmt(p, dec), ax + 8, y); }
+  const yp = Math.min(hh - 9, Math.max(9, Y(ref)));
+  c.fillStyle = "#E0B23C"; c.fillRect(ax + 2, yp - 9, W - ax - 4, 18);
+  c.fillStyle = "#14213A"; c.font = "600 11px Archivo, system-ui, sans-serif"; c.fillText(fmt(ref, dec), ax + 8, yp);
+
+  /* axe du temps */
+  c.fillStyle = "#0A1220"; c.fillRect(0, hh, ax, HM.timeH);
+  c.font = "11px Archivo, system-ui, sans-serif"; c.fillStyle = "#AEB8C8"; c.textBaseline = "middle";
+  const pxPerSec = cw * 1000 / book.colMs, every = [5, 15, 30, 60, 120, 300, 600, 1800].find(s => s * pxPerSec >= 80) || 3600;
+  let prevB = null;
+  cols.forEach((col, ci) => {
+    const bk = Math.floor(col.t / (every * 1000)); if (prevB !== null && bk !== prevB) {
+      const x = (off + ci) * cw; c.fillRect(x, hh, 1, 5);
+      const lbl = hmClock(bk * every * 1000, every < 60); const tw = c.measureText(lbl).width;
+      if (x - tw / 2 > 2 && x + tw / 2 < heatW - 2) c.fillText(lbl, x - tw / 2, hh + 13);
+    }
+    prevB = bk;
+  });
+  book.draw = { cols, off, lo, step, gr, hh, gw, G, heatW, cur, dec, RB, RA, Y };
+  hmTip();
+}
+function hmTip() {
+  const tip = $("hmTip"), d = book.draw, h = book.hover;
+  if (!d || !h || h.y >= d.hh || h.x >= d.heatW + HM.profW) { tip.hidden = true; return; }
+  const r = Math.floor((d.hh - h.y) / d.hh * d.gr); if (r < 0 || r >= d.gr) { tip.hidden = true; return; }
+  const p0 = d.lo + r * d.step, p1 = p0 + d.step, u = hmUnit();
+  let html;
+  if (h.x >= d.heatW) {
+    const parts = [];
+    if (d.RB[r]) parts.push(hmSize(d.RB[r]) + " " + u + " à l'achat");
+    if (d.RA[r]) parts.push(hmSize(d.RA[r]) + " " + u + " à la vente");
+    html = "<b>" + fmt(p0, d.dec) + " à " + fmt(p1, d.dec) + "</b><br>Maintenant : " + (parts.length ? parts.join(", ") : "aucun ordre");
+  } else {
+    const x = Math.floor(h.x / HM.colW), ci = x - d.off, col = d.cols[ci];
+    if (!col) { tip.hidden = true; return; }
+    const s = d.G[r * d.gw + x];
+    html = "<b>" + fmt(p0, d.dec) + " à " + fmt(p1, d.dec) + "</b><br>" + hmClock(col.t, true) + " : " + (s ? hmSize(s) + " " + u + " en attente" : "aucun ordre");
+    if (col.buy + col.sell > 0) html += "<br>Échangé : " + hmSize(col.buy) + " " + u + " acheté, " + hmSize(col.sell) + " " + u + " vendu";
+  }
+  tip.innerHTML = html; tip.hidden = false;
+  const wrap = $("hmWrap").getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+  tip.style.left = Math.min(wrap.width - tw - 6, h.x + 14) + "px";
+  tip.style.top = Math.max(6, Math.min(wrap.height - th - 6, h.y - th - 10)) + "px";
+}
+
+/* ----- murs d'ordres et déséquilibre ----- */
+function hmSummary() {
+  if (!hmVisible()) return;
+  const S = curSrc(), u = hmUnit();
+  $("hmQuality").textContent = S.kind === "binance"
+    ? "Carnet réel de PAXG/USDT sur Binance. C'est un vrai marché, mais bien plus petit que celui de l'or : les murs montrent où des intervenants attendent sur ce jeton, ce qui donne une indication, pas une carte complète de l'or au comptant."
+    : S.kind === "ctrader"
+    ? "Profondeur fournie par ton broker via cTrader. L'or et le Nasdaq en CFD n'ont pas de carnet central : ces quantités sont les prix proposés par les fournisseurs de liquidité du broker, souvent arrondies ou fixes. Lis-les comme un indice, pas comme les ordres réels du marché."
+    : "";
+  $("hmKeyTrades").hidden = S.kind !== "binance";
+  let end = book.cols.length;
+  if (book.paused && book.pauseCol) { const k = book.cols.indexOf(book.pauseCol); if (k >= 0) end = k + 1; }
+  const cur = book.cols[end - 1];
+  if (!cur) { $("hmWalls").innerHTML = '<p class="muted">Les murs apparaîtront dès que le carnet sera chargé.</p>'; $("hmImb").innerHTML = ""; $("hmWallsAge").textContent = ""; return; }
+  const mid = cur.mid, ws = book.draw ? book.draw.step : niceStep(mid * 0.00005), lim = mid * 0.006;
+  const bins = new Map();
+  for (let k = 0; k < cur.P.length; k++) {
+    const p = cur.P[k]; if (Math.abs(p - mid) > lim) continue;
+    const side = cur.Q[k] > 0 ? 1 : -1, key = side + ":" + Math.floor(p / ws + 1e-9);
+    bins.set(key, (bins.get(key) || 0) + Math.abs(cur.Q[k]));
+  }
+  const all = [...bins.entries()].map(([k, s]) => { const [sd, i] = k.split(":"); return { side: +sd, i: +i, s }; });
+  const sizes = all.map(x => x.s).sort((a, b) => a - b), med = sizes.length ? sizes[Math.floor(sizes.length / 2)] : 0;
+  const pickSide = sd => all.filter(x => x.side === sd && x.s >= med * 2.5).sort((a, b) => b.s - a.s).slice(0, 3);
+  const sizeAt = (col, w) => { let s = 0; const a = w.i * ws, b = a + ws; for (let k = 0; k < col.P.length; k++) { const p = col.P[k]; if (p >= a - 1e-9 && p < b - 1e-9 && (col.Q[k] > 0) === (w.side > 0)) s += Math.abs(col.Q[k]); } return s; };
+  const since = w => { let j = end - 1; const stop = Math.max(0, end - 600); while (j > stop && sizeAt(book.cols[j - 1], w) >= w.s * 0.5) j--; return cur.t - book.cols[j].t; };
+  const line = w => {
+    const a = w.i * ws, b = a + ws, near = w.side > 0 ? b : a, dist = Math.abs(near - mid), age = since(w);
+    return '<li class="' + (w.side > 0 ? "buy" : "sell") + '"><b>' + fmt(a, 2) + " à " + fmt(b, 2) + "</b><span>" + hmSize(w.s) + " " + u + "</span><span>" + fmt(dist, 2) + " " + U() + (w.side > 0 ? " sous le prix" : " au-dessus") + "</span><span>" + (age < book.colMs * 2 ? "à l'instant" : "depuis " + hmAgo(age)) + "</span></li>";
+  };
+  const sells = pickSide(-1).sort((a, b) => b.i - a.i), buys = pickSide(1).sort((a, b) => b.i - a.i);
+  const head = '<li class="head"><span>Prix</span><span>Quantité</span><span>Distance</span><span>Présence</span></li>';
+  $("hmWalls").innerHTML = (sells.length || buys.length)
+    ? '<div class="walls"><h4>Vendeurs au-dessus du prix</h4><ul>' + (sells.length ? head + sells.map(line).join("") : '<li class="head"><span>Aucun mur marqué</span></li>') +
+      '</ul><h4>Acheteurs sous le prix</h4><ul>' + (buys.length ? head + buys.map(line).join("") : '<li class="head"><span>Aucun mur marqué</span></li>') + "</ul></div>" +
+      '<p class="muted">Un mur est un prix qui porte au moins deux fois et demie plus d\'ordres que la normale. Un ordre affiché peut être retiré à tout moment : un mur présent depuis plusieurs minutes compte plus qu\'un mur apparu à l\'instant.</p>'
+    : '<p class="muted">Pas de mur marqué près du prix : les ordres sont répartis de façon régulière.</p>';
+  $("hmWallsAge").textContent = "à moins de 0,6 % du prix";
+  const imb = pct => { let b = 0, a = 0; for (let k = 0; k < cur.P.length; k++) if (Math.abs(cur.P[k] - mid) <= mid * pct) { if (cur.Q[k] > 0) b += cur.Q[k]; else a -= cur.Q[k]; } return b + a ? b / (b + a) : 0.5; };
+  const i1 = imb(0.001), i3 = imb(0.003);
+  const row = (lbl, v) => '<div class="press"><span>' + lbl + '</span><div class="pbar"><i style="width:' + Math.round(v * 100) + '%"></i></div><span>' + Math.round(v * 100) + " % acheteurs</span></div>";
+  const verdict = i1 >= 0.6 && i3 >= 0.55 ? "Plus d'ordres d'achat que de vente près du prix : le carnet soutient le prix, tant que ces ordres restent en place."
+    : i1 <= 0.4 && i3 <= 0.45 ? "Plus d'ordres de vente que d'achat près du prix : le carnet freine la hausse, tant que ces ordres restent en place."
+    : "Carnet à peu près équilibré près du prix : pas d'avantage net d'un côté.";
+  $("hmImb").innerHTML = '<p class="act">' + verdict + "</p>" + row("±0,1 %", i1) + row("±0,3 %", i3) +
+    '<p class="muted">Part des ordres d\'achat parmi tous les ordres en attente dans la tranche de prix, en vert les acheteurs, en rouge les vendeurs.</p>';
+}
+
 /* ---------- Orchestration ---------- */
 let startQueued = false;
 async function start() {
   if (busy) { startQueued = true; return; }
-  clearInterval(timer); stopLive();
+  clearInterval(timer); stopLive(); bookStop();
   const src = curSrc().kind;
   const rt = src === "binance" || src === "ctrader";
   $("autoText").textContent = rt ? "Temps réel" : "Actualisation auto (10 min)";
   const ok = await loadHistory();
   if (!$("auto").checked) { setLive("off", rt ? "Temps réel arrêté" : "Actualisation manuelle"); return; }
-  if (src === "binance") { if (ok) startLive(); else setLive("off", "Temps réel indisponible"); }
+  if (src === "binance") { if (ok) { startLive(); bookStart(); } else setLive("off", "Temps réel indisponible"); }
   else if (src === "ctrader") {
     if (!ok) { setLive("off", "Temps réel indisponible"); return; }
-    try { await ctSubscribe(); lastTick = 0; setLive("on", "En direct (cTrader)"); }
+    try { await ctSubscribe(); lastTick = 0; setLive("on", "En direct (cTrader)"); bookStart(); }
     catch (e) { setStatus(e.message, true); setLive("off", "Temps réel indisponible"); }
     timer = setInterval(loadHistory, 900000); /* recalage complet des bougies toutes les 15 min */
   }
@@ -2162,6 +2651,7 @@ posInitUI();
 stopsInitUI();
 volInitUI();
 ctInitUI();
+hmInit();
 switchInstrument(inst);
 $("instrument").addEventListener("change", () => { switchInstrument($("instrument").value); start(); });
 $("source").addEventListener("change", () => { store("src-" + inst, $("source").value); updateSourceUI(); resetData(); posUI(); start(); });
@@ -2192,13 +2682,14 @@ const pn = v => v > 0 ? "p" : v < 0 ? "n" : "";
 function rules() { try { return Object.assign({ maxLoss: 3, maxTrades: 5, riskPct: 1, capital: 10000 }, JSON.parse(store("rules") || "{}")); } catch { return { maxLoss: 3, maxTrades: 5, riskPct: 1, capital: 10000 }; } }
 
 /* ---------- navigation ---------- */
-const VIEWS = ["journee", "marche", "graphique", "position", "journal", "risque", "reglages", "admin", "aide"];
+const VIEWS = ["journee", "marche", "graphique", "liquidite", "position", "journal", "risque", "reglages", "admin", "aide"];
 function showView(v) {
   if (!VIEWS.includes(v) || (v === "admin" && ME.role !== "admin")) v = "journee";
   document.querySelectorAll(".view").forEach(s => s.hidden = s.dataset.view !== v);
   document.querySelectorAll(".rail nav button").forEach(b => b.setAttribute("aria-current", b.dataset.view === v ? "page" : "false"));
   store("view", v); document.body.classList.remove("rail-open");
   if (v === "graphique") setTimeout(() => { try { queueOverlay(); } catch {} }, 60);
+  if (v === "liquidite") setTimeout(() => { hmResize(); hmSummary(); }, 30);
   if (v === "journal") loadJournal();
   if (v === "admin") loadUsers();
   if (v === "risque") calcRisk();
