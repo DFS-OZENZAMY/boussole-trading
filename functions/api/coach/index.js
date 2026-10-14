@@ -9,12 +9,23 @@ const PROVIDERS = {
   anthropic: { name: "Anthropic", key: "ANTHROPIC_API_KEY", modelVar: "COACH_MODEL", model: "claude-sonnet-5-5" },
   openrouter: { name: "OpenRouter", key: "OPENROUTER_API_KEY", modelVar: "OPENROUTER_MODEL", model: "anthropic/claude-sonnet-5.5" },
 };
+/* Lit une variable du Worker en tolérant les écarts de casse et les espaces autour du nom ou de la valeur */
+function envGet(env, name) {
+  if (env[name] != null && String(env[name]).trim()) return String(env[name]).trim();
+  for (const k of Object.keys(env)) if (k.trim().toUpperCase() === name && env[k] != null && String(env[k]).trim()) return String(env[k]).trim();
+  return "";
+}
+/* Pour l'administrateur : noms des variables liées à l'IA que le serveur voit (jamais leurs valeurs) */
+function envHints(env) {
+  return Object.keys(env).filter(k => /openrouter|anthropic|coach|claude|api.?key/i.test(k))
+    .map(k => ({ name: k, empty: env[k] == null || !String(env[k]).trim(), kind: typeof env[k] }));
+}
 function provider(env) {
   const want = String(env.COACH_PROVIDER || "").trim().toLowerCase();
-  if (PROVIDERS[want] && env[PROVIDERS[want].key]) return want;
-  return env.ANTHROPIC_API_KEY ? "anthropic" : env.OPENROUTER_API_KEY ? "openrouter" : null;
+  if (PROVIDERS[want] && envGet(env, PROVIDERS[want].key)) return want;
+  return envGet(env, "ANTHROPIC_API_KEY") ? "anthropic" : envGet(env, "OPENROUTER_API_KEY") ? "openrouter" : null;
 }
-const modelOf = (env, p) => String(env[PROVIDERS[p].modelVar] || "").trim() || PROVIDERS[p].model;
+const modelOf = (env, p) => envGet(env, PROVIDERS[p].modelVar) || PROVIDERS[p].model;
 
 /* Appelle le fournisseur et renvoie le texte du bilan, ou lève une erreur au message lisible */
 async function complete(env, p, system, prompt, origin) {
@@ -24,12 +35,12 @@ async function complete(env, p, system, prompt, origin) {
     res = p === "anthropic"
       ? await fetch("https://api.anthropic.com/v1/messages", {
           method: "POST",
-          headers: { "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+          headers: { "x-api-key": envGet(env, "ANTHROPIC_API_KEY"), "anthropic-version": "2023-06-01", "content-type": "application/json" },
           body: JSON.stringify({ model, max_tokens: 4000, system, messages: [{ role: "user", content: prompt }] }),
         })
       : await fetch("https://openrouter.ai/api/v1/chat/completions", {
           method: "POST",
-          headers: { Authorization: "Bearer " + env.OPENROUTER_API_KEY, "Content-Type": "application/json", "HTTP-Referer": origin, "X-OpenRouter-Title": "Boussole Trading", "X-Title": "Boussole Trading" },
+          headers: { Authorization: "Bearer " + envGet(env, "OPENROUTER_API_KEY"), "Content-Type": "application/json", "HTTP-Referer": origin, "X-OpenRouter-Title": "Boussole Trading", "X-Title": "Boussole Trading" },
           body: JSON.stringify({ model, max_tokens: 4000, messages: [{ role: "system", content: system }, { role: "user", content: prompt }] }),
         });
   } catch { throw new Error("Impossible de joindre " + PROVIDERS[p].name + ". Réessaie dans un instant."); }
@@ -97,7 +108,9 @@ export async function onRequestGet({ env, data }) {
   const row = await env.DB.prepare("SELECT value FROM user_data WHERE user_id = ? AND key = 'coach-report'").bind(data.user.id).first();
   let report = null; try { report = row ? JSON.parse(row.value) : null; } catch {}
   const p = provider(env);
-  return json({ enabled: !!p, provider: p ? PROVIDERS[p].name : null, model: p ? modelOf(env, p) : null, report });
+  const out = { enabled: !!p, provider: p ? PROVIDERS[p].name : null, model: p ? modelOf(env, p) : null, report };
+  if (data.user.role === "admin") out.hints = envHints(env);
+  return json(out);
 }
 
 export async function onRequestPost({ request, env, data }) {
