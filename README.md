@@ -1,6 +1,6 @@
 # 🧭 Boussole Trading
 
-Plateforme d'aide au trading pour les équipes de traders, protégée par mot de passe et hébergée sur **Cloudflare Pages**. Elle rassemble tout ce qu'il faut pour une journée de trading sur l'**or (XAU/USD)** et le **Nasdaq 100** : lire le marché, préparer ses entrées, suivre ses positions et tenir son journal.
+Plateforme d'aide au trading pour les équipes de traders, protégée par mot de passe et hébergée sur **Cloudflare Workers**. Elle rassemble tout ce qu'il faut pour une journée de trading sur l'**or (XAU/USD)** et le **Nasdaq 100** : lire le marché, préparer ses entrées, suivre ses positions et tenir son journal.
 
 > ⚠️ **Avertissement.** Boussole Trading est un outil d'aide à la lecture du marché, pas un conseil en investissement. Les signaux sont calculés par des règles mécaniques (moyennes mobiles, ATR, volume) qui ne tiennent pas compte de l'actualité et ne garantissent aucun résultat. Le trading à effet de levier comporte un risque élevé de perte en capital. Teste toujours en compte démo, et garde un stop loss chez ton broker.
 
@@ -21,20 +21,17 @@ Chaque trader a son propre compte, ses propres réglages, ses positions et son j
 
 ## Déployer sur Cloudflare
 
-La plateforme utilise **Cloudflare Pages** (pages et fonctions serveur) et **Cloudflare D1** (base de données). Les deux sont disponibles dans l'offre gratuite.
+La plateforme tourne sur **Cloudflare Workers** (fichier `wrangler.jsonc`, point d'entrée `src/worker.js`) avec une base **Cloudflare D1**. Les deux sont disponibles dans l'offre gratuite. Le Worker passe avant chaque fichier : aucune page n'est accessible sans être connecté.
 
-1. **Relier le dépôt à Cloudflare Pages.** Dans Cloudflare, ouvre **Workers & Pages**, puis **Create**, onglet **Pages**, **Connect to Git**, et choisis ce dépôt. Si ton projet existant a été créé par envoi direct de fichiers (glisser-déposer), crée un nouveau projet relié à Git : l'envoi direct ne gère pas les fonctions serveur.
-2. **Réglages de build** du projet :
-   - Framework preset : `None`
-   - Build command : *(laisser vide)*
-   - Build output directory : `public`
-3. **Créer la base de données.** Ouvre **Storage & Databases**, puis **D1 SQL Database**, **Create**, et nomme-la par exemple `boussole`.
-4. **Relier la base au projet.** Dans le projet Pages, ouvre **Settings**, puis **Bindings**, **Add**, **D1 database**. Nom de la variable : `DB` (exactement), base : `boussole`. Fais-le pour l'environnement **Production** (et **Preview** si tu l'utilises).
-5. **Redéployer.** Onglet **Deployments**, puis **Retry deployment** sur le dernier déploiement.
-6. **Créer le compte administrateur.** Ouvre l'adresse de ton site : tant qu'aucun compte n'existe, la page de connexion te propose de créer le compte administrateur. Les tables de la base sont créées automatiquement.
-7. **Ajouter les traders.** Dans la vue **Équipe**, crée un compte par trader avec un mot de passe provisoire. Il devra le remplacer à sa première connexion.
+1. **Créer la base de données.** Dans Cloudflare, ouvre **Storage & Databases**, puis **D1**, **Create**. La base de ce projet s'appelle `bossole_trading`.
+2. **Renseigner son identifiant.** Ouvre la base, copie son **Database ID**, puis dans `wrangler.jsonc`, retire les `//` devant le bloc `d1_databases` et colle l'identifiant.
+3. **Déployer.** Avec Workers relié à GitHub, chaque commit sur `main` redéploie automatiquement (commande de déploiement : `npx wrangler deploy`). En ligne de commande : `npx wrangler deploy`.
+4. **Créer le compte administrateur.** Ouvre l'adresse du site : tant qu'aucun compte n'existe, la page de connexion propose de créer le compte administrateur. Les tables sont créées automatiquement.
+5. **Ajouter les traders** dans la vue **Équipe**, avec un mot de passe provisoire qu'ils remplaceront à leur première connexion.
 
-Si la base n'est pas reliée, le site affiche une page qui rappelle ces étapes.
+Tant que la base n'est pas reliée, le site affiche une page qui rappelle ces étapes et reste fermé.
+
+Le dossier `functions/` contient les mêmes API au format Cloudflare Pages : la plateforme peut aussi être déployée sur Pages (dossier de sortie `public`, liaison D1 nommée `DB`).
 
 ## Sécurité
 
@@ -60,16 +57,17 @@ Si la base n'est pas reliée, le site affiche une page qui rappelle ces étapes.
 ## Développement local
 
 ```bash
-npm install -g wrangler
-wrangler pages dev public --d1 DB=boussole
+npx wrangler dev
 ```
 
 ## Structure
 
 ```
 public/            pages servies (application, connexion, icône)
-functions/         API serveur Cloudflare Pages Functions
-  _middleware.js   protection par mot de passe de tout le site
+src/worker.js      point d'entrée Cloudflare Workers : protection et routage
+wrangler.jsonc     configuration Workers (fichiers, base D1)
+functions/         API serveur (aussi utilisables avec Cloudflare Pages)
+  _middleware.js   protection par mot de passe (version Pages)
   api/auth/        connexion, déconnexion, configuration initiale, mot de passe
   api/data/        réglages et données de chaque trader
   api/trades/      journal de trading

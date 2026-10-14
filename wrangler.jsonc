@@ -1,0 +1,20 @@
+{
+  // Configuration Cloudflare Workers de Boussole Trading
+  "name": "boussole-trading",
+  "main": "src/worker.js",
+  "compatibility_date": "2025-04-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    // Toutes les requêtes passent d'abord par le Worker, qui vérifie la connexion
+    "run_worker_first": true
+  },
+
+  // Base de données D1 : retire les deux barres « // » devant les lignes ci-dessous
+  // et colle l'identifiant (Database ID) de ta base bossole_trading.
+  // "d1_databases": [
+  //   { "binding": "DB", "database_name": "bossole_trading", "database_id": "COLLE_ICI_L_ID_DE_LA_BASE" }
+  // ],
+
+  "observability": { "enabled": true }
+}
