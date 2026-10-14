@@ -1,8 +1,56 @@
-// Coach IA : relit les trades du journal et rédige un bilan avec l'API d'Anthropic.
-// Nécessite le secret ANTHROPIC_API_KEY sur le Worker. Variable facultative COACH_MODEL pour changer de modèle.
+// Coach IA : relit les trades du journal et rédige un bilan avec un modèle d'IA.
+// Deux fournisseurs possibles, selon les secrets présents sur le Worker :
+//   ANTHROPIC_API_KEY  : API d'Anthropic en direct (modèle : variable COACH_MODEL, par défaut claude-sonnet-5-5)
+//   OPENROUTER_API_KEY : OpenRouter (modèle : variable OPENROUTER_MODEL, par défaut anthropic/claude-sonnet-5.5)
+// Si les deux sont présents, Anthropic est utilisé, sauf si COACH_PROVIDER vaut « openrouter ».
 import { json, fail, body, now } from "../../../lib/auth.js";
 
-const MODEL_DEFAULT = "claude-sonnet-5-5";
+const PROVIDERS = {
+  anthropic: { name: "Anthropic", key: "ANTHROPIC_API_KEY", modelVar: "COACH_MODEL", model: "claude-sonnet-5-5" },
+  openrouter: { name: "OpenRouter", key: "OPENROUTER_API_KEY", modelVar: "OPENROUTER_MODEL", model: "anthropic/claude-sonnet-5.5" },
+};
+function provider(env) {
+  const want = String(env.COACH_PROVIDER || "").trim().toLowerCase();
+  if (PROVIDERS[want] && env[PROVIDERS[want].key]) return want;
+  return env.ANTHROPIC_API_KEY ? "anthropic" : env.OPENROUTER_API_KEY ? "openrouter" : null;
+}
+const modelOf = (env, p) => String(env[PROVIDERS[p].modelVar] || "").trim() || PROVIDERS[p].model;
+
+/* Appelle le fournisseur et renvoie le texte du bilan, ou lève une erreur au message lisible */
+async function complete(env, p, system, prompt, origin) {
+  const model = modelOf(env, p);
+  let res;
+  try {
+    res = p === "anthropic"
+      ? await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: { "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+          body: JSON.stringify({ model, max_tokens: 4000, system, messages: [{ role: "user", content: prompt }] }),
+        })
+      : await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: "Bearer " + env.OPENROUTER_API_KEY, "Content-Type": "application/json", "HTTP-Referer": origin, "X-OpenRouter-Title": "Boussole Trading", "X-Title": "Boussole Trading" },
+          body: JSON.stringify({ model, max_tokens: 4000, messages: [{ role: "system", content: system }, { role: "user", content: prompt }] }),
+        });
+  } catch { throw new Error("Impossible de joindre " + PROVIDERS[p].name + ". Réessaie dans un instant."); }
+  let j = null; try { j = await res.json(); } catch {}
+  const detail = j && j.error ? (typeof j.error === "string" ? j.error : j.error.message || "") : "";
+  if (!res.ok || (p === "openrouter" && j && j.error)) {
+    const st = res.ok ? Number(j.error.code) || 500 : res.status, keyName = PROVIDERS[p].key, modelVar = PROVIDERS[p].modelVar;
+    const why = st === 401 || st === 403 ? "clé API refusée, vérifie le secret " + keyName + "."
+      : st === 402 ? "crédit insuffisant sur ton compte " + PROVIDERS[p].name + "."
+      : st === 404 || /model/i.test(detail) && st === 400 ? "modèle « " + model + " » introuvable, vérifie la variable " + modelVar + "."
+      : st === 429 ? "limite d'utilisation atteinte, réessaie plus tard."
+      : st >= 500 ? "service momentanément indisponible." : "requête refusée" + (detail ? " (" + detail.slice(0, 160) + ")" : "") + ".";
+    throw new Error(PROVIDERS[p].name + " a répondu " + st + " : " + why);
+  }
+  let text = "";
+  if (p === "anthropic") text = (j.content || []).filter(c => c.type === "text").map(c => c.text).join("\n");
+  else { const c = j.choices && j.choices[0] && j.choices[0].message ? j.choices[0].message.content : ""; text = Array.isArray(c) ? c.map(x => x.text || "").join("\n") : c || ""; }
+  text = String(text).trim();
+  if (!text) throw new Error(PROVIDERS[p].name + " n'a pas renvoyé de bilan. Réessaie, ou choisis un autre modèle.");
+  return { text, model };
+}
 const COOLDOWN_MS = 10 * 60 * 1000;
 const SYSTEM = `Tu es un coach de trading expérimenté qui accompagne un trader particulier francophone.
 Tu analyses uniquement les données de son journal fournies ci-dessous : ne suppose rien qui n'y figure pas.
@@ -48,11 +96,13 @@ function summary(rows) {
 export async function onRequestGet({ env, data }) {
   const row = await env.DB.prepare("SELECT value FROM user_data WHERE user_id = ? AND key = 'coach-report'").bind(data.user.id).first();
   let report = null; try { report = row ? JSON.parse(row.value) : null; } catch {}
-  return json({ enabled: !!env.ANTHROPIC_API_KEY, report });
+  const p = provider(env);
+  return json({ enabled: !!p, provider: p ? PROVIDERS[p].name : null, model: p ? modelOf(env, p) : null, report });
 }
 
 export async function onRequestPost({ request, env, data }) {
-  if (!env.ANTHROPIC_API_KEY) return fail("Le coach IA n'est pas encore activé : l'administrateur doit ajouter le secret ANTHROPIC_API_KEY au Worker Cloudflare.", 503);
+  const p = provider(env);
+  if (!p) return fail("Le coach IA n'est pas encore activé : l'administrateur doit ajouter le secret ANTHROPIC_API_KEY ou OPENROUTER_API_KEY au Worker Cloudflare.", 503);
   const uid = data.user.id;
   const last = await env.DB.prepare("SELECT updated_at FROM user_data WHERE user_id = ? AND key = 'coach-report'").bind(uid).first();
   if (last && now() - last.updated_at < COOLDOWN_MS) return fail("Un bilan a été préparé il y a moins de 10 minutes. Réessaie un peu plus tard.", 429);
@@ -68,23 +118,11 @@ export async function onRequestPost({ request, env, data }) {
   const prompt = `Période analysée : ${days} derniers jours.\nRègles que le trader s'est fixées : ${rulesRow ? rulesRow.value : "non renseignées"}.\n\n` +
     `Statistiques calculées (résultats exprimés en R, 1 R = le montant risqué sur un trade) :\n${JSON.stringify(summary(results), null, 1)}\n\n` +
     `Trades, du plus ancien au plus récent (date UTC | marché | sens | résultat | configuration | émotion | règles | durée | notes) :\n${lines.join("\n")}`;
-  let res;
-  try {
-    res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-      body: JSON.stringify({ model: env.COACH_MODEL || MODEL_DEFAULT, max_tokens: 2000, system: SYSTEM, messages: [{ role: "user", content: prompt }] }),
-    });
-  } catch { return fail("Impossible de joindre le service d'IA. Réessaie dans un instant.", 502); }
-  if (!res.ok) {
-    const why = res.status === 401 ? "clé API refusée, vérifie le secret ANTHROPIC_API_KEY." : res.status === 404 ? "modèle introuvable, vérifie la variable COACH_MODEL." :
-      res.status === 429 ? "limite d'utilisation atteinte, réessaie plus tard." : res.status >= 500 ? "service momentanément indisponible." : "requête refusée.";
-    return fail("Le service d'IA a répondu " + res.status + " : " + why, 502);
-  }
-  const j = await res.json();
-  const text = (j.content || []).filter(c => c.type === "text").map(c => c.text).join("\n").trim();
-  if (!text) return fail("Le service d'IA n'a pas renvoyé de bilan.", 502);
-  const report = { t: now(), days, n: results.length, text };
+  let out;
+  try { out = await complete(env, p, SYSTEM, prompt, new URL(request.url).origin); }
+  catch (e) { return fail(e.message, 502); }
+  const text = out.text;
+  const report = { t: now(), days, n: results.length, text, provider: PROVIDERS[p].name, model: out.model };
   await env.DB.prepare("INSERT INTO user_data (user_id, key, value, updated_at) VALUES (?, 'coach-report', ?, ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at")
     .bind(uid, JSON.stringify(report), now()).run();
   return json(report);

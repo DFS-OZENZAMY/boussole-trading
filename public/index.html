@@ -836,7 +836,7 @@ svg.eq .zero{stroke:var(--line);stroke-width:1}
         <div class="pf-grid" id="pfTables"></div>
         <section class="card coach">
           <div class="card-h"><h3>Coach IA</h3><span class="muted" id="coachWhen" style="margin:0"></span></div>
-          <p class="muted">Le coach relit tes trades, tes notes et tes émotions, puis te propose un bilan et trois actions concrètes. Tes trades de la période sont envoyés au service d'IA d'Anthropic pour cette analyse.</p>
+          <p class="muted">Le coach relit tes trades, tes notes et tes émotions, puis te propose un bilan et trois actions concrètes. Tes trades de la période sont envoyés <span id="coachProv">au service d'IA configuré</span> pour cette analyse.</p>
           <div class="row-btns"><select id="coachDays" aria-label="Période du bilan"><option value="7">7 derniers jours</option><option value="30" selected>30 derniers jours</option><option value="90">90 derniers jours</option></select><button type="button" id="coachRun">Demander un bilan</button><span class="msg" id="coachMsg"></span></div>
           <div class="coach-text" id="coachText"></div>
         </section>
@@ -1058,7 +1058,8 @@ svg.eq .zero{stroke:var(--line);stroke-width:1}
   <details>
     <summary>L'analyse de performance et le coach IA</summary>
     <p>La page Performance découpe tes trades du journal par configuration, émotion, session, jour, marché, respect des règles, rang dans la journée et résultat du trade précédent. La section « À retenir » met en avant ton point fort et ce qui te coûte le plus, à partir d'un nombre minimal de trades pour éviter les conclusions hâtives. Plus tu renseignes la configuration et l'émotion de chaque trade, plus l'analyse est utile.</p>
-    <p>Le coach IA relit tes trades de la période choisie, tes notes et tes règles, puis rédige un bilan avec trois actions concrètes pour la semaine suivante. Tes trades sont envoyés au service d'IA d'Anthropic pour cette analyse. Un bilan peut être demandé toutes les 10 minutes. Pour l'activer, l'administrateur ajoute dans Cloudflare, sur le Worker boussole-trading, un secret nommé ANTHROPIC_API_KEY contenant une clé API Anthropic (Settings, puis Variables and Secrets). L'utilisation de l'API est facturée par Anthropic selon le volume.</p>
+    <p>Le coach IA relit tes trades de la période choisie, tes notes et tes règles, puis rédige un bilan avec trois actions concrètes pour la semaine suivante. Un bilan peut être demandé toutes les 10 minutes.</p>
+    <p>Pour l'activer, l'administrateur ajoute dans Cloudflare, sur le Worker boussole-trading (Settings, puis Variables and Secrets), l'un de ces deux secrets. ANTHROPIC_API_KEY, une clé de l'API d'Anthropic : le bilan est rédigé par Claude, et tes trades sont envoyés à Anthropic. Ou OPENROUTER_API_KEY, une clé OpenRouter : tu peux alors choisir parmi des centaines de modèles avec la variable OPENROUTER_MODEL (par défaut anthropic/claude-sonnet-5.5), et tes trades transitent par OpenRouter puis par le fournisseur du modèle. Si les deux clés sont présentes, Anthropic est utilisé, sauf si la variable COACH_PROVIDER vaut openrouter. Dans les deux cas, l'utilisation est facturée par le service choisi selon le volume.</p>
   </details>
   <details>
     <summary>Le mode prop firm</summary>
@@ -4323,13 +4324,14 @@ function mdLite(md) {
 }
 function coachShow(rep) {
   $("coachText").innerHTML = rep && rep.text ? mdLite(rep.text) : "";
-  $("coachWhen").textContent = rep && rep.t ? "Bilan du " + new Date(rep.t).toLocaleString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) + ", " + rep.n + " trades sur " + rep.days + " jours" : "";
+  $("coachWhen").textContent = rep && rep.t ? "Bilan du " + new Date(rep.t).toLocaleString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) + ", " + rep.n + " trades sur " + rep.days + " jours" + (rep.provider ? ", via " + rep.provider : "") : "";
 }
 async function coachLoad() {
   try {
     const r = await api("/api/coach");
     $("coachRun").disabled = !r.enabled;
-    $("coachMsg").textContent = r.enabled ? "" : (ME.role === "admin" ? "Pour activer le coach, ajoute le secret ANTHROPIC_API_KEY au Worker dans Cloudflare (voir l'aide)." : "Le coach IA n'est pas encore activé par l'administrateur.");
+    $("coachMsg").textContent = r.enabled ? "" : (ME.role === "admin" ? "Pour activer le coach, ajoute au Worker dans Cloudflare le secret ANTHROPIC_API_KEY ou OPENROUTER_API_KEY (voir l'aide)." : "Le coach IA n'est pas encore activé par l'administrateur.");
+    $("coachProv").textContent = r.provider === "OpenRouter" ? "à OpenRouter, puis au fournisseur du modèle choisi (" + (r.model || "") + ")," : r.provider === "Anthropic" ? "au service d'IA d'Anthropic" : "au service d'IA configuré";
     coachShow(r.report);
   } catch (e) { $("coachMsg").textContent = e.message; }
 }

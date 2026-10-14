@@ -58,7 +58,14 @@ Le dossier `functions/` contient les mêmes API au format Cloudflare Pages : la 
 
 ### Coach IA
 
-La page **Performance** propose un bilan rédigé par l'IA à partir du journal. Pour l'activer, ajoute au Worker Cloudflare un secret `ANTHROPIC_API_KEY` (Workers, boussole-trading, Settings, Variables and Secrets), ou en ligne de commande : `npx wrangler secret put ANTHROPIC_API_KEY`. La variable facultative `COACH_MODEL` permet de choisir le modèle (par défaut `claude-sonnet-5-5`). Un bilan par utilisateur toutes les 10 minutes au maximum.
+La page **Performance** propose un bilan rédigé par l'IA à partir du journal. Deux fournisseurs possibles, à configurer comme secrets du Worker Cloudflare (Workers, boussole-trading, Settings, Variables and Secrets) :
+
+| Secret | Fournisseur | Variable du modèle | Modèle par défaut |
+|---|---|---|---|
+| `ANTHROPIC_API_KEY` | API d'Anthropic en direct | `COACH_MODEL` | `claude-sonnet-5-5` |
+| `OPENROUTER_API_KEY` | OpenRouter (des centaines de modèles) | `OPENROUTER_MODEL` | `anthropic/claude-sonnet-5.5` |
+
+En ligne de commande : `npx wrangler secret put OPENROUTER_API_KEY` (ou `ANTHROPIC_API_KEY`). Si les deux clés sont présentes, Anthropic est utilisé, sauf si la variable `COACH_PROVIDER` vaut `openrouter`. Les identifiants de modèles OpenRouter sont listés sur openrouter.ai/models. Un bilan par utilisateur toutes les 10 minutes au maximum.
 
 ### Mode prop firm
 
