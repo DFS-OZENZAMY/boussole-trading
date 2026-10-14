@@ -3,9 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Boussole Trading : tendance, entrées et suivi de position</title>
+<title>Boussole Trading</title>
+<meta name="robots" content="noindex">
 <meta name="description" content="Plateforme gratuite d'aide au trading : tendance multi-unités de temps, zones acheteurs et vendeurs, entrées proposées et suivi de position en temps réel, pour l'or et le Nasdaq.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧭</text></svg>">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&display=swap" rel="stylesheet">
 <style>
@@ -221,47 +222,270 @@ button.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
 .prop dt{font-size:11px;color:var(--mute)} .prop dd{margin:0;font-size:13px;font-weight:600}
 .prop button{margin-top:auto}
 footer{margin-top:18px;font-size:12px;color:var(--mute);max-width:80ch}
+/* ================= Coquille Boussole Trading ================= */
+:root{--navy:#14213A;--navy2:#1B2C4A;--navy3:#24375A;--brass:#C8A24A;--brass2:#E6C46A;--rail-ink:#B9C3D3}
+body{min-height:100vh}
+.app{display:grid;grid-template-columns:236px minmax(0,1fr);min-height:100vh}
+.rail{background:var(--navy);color:var(--rail-ink);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:18px 12px calc(14px + env(safe-area-inset-bottom,0px));z-index:30}
+.rail-brand{display:flex;align-items:center;gap:10px;padding:4px 10px 18px;color:#fff;font-stretch:125%;font-weight:800;font-size:20px;letter-spacing:-.01em}
+.rail-brand svg{width:30px;height:30px;flex:none}
+.rail nav{display:flex;flex-direction:column;gap:2px;flex:1;overflow-y:auto}
+.rail nav button{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;cursor:pointer;font-size:15px;font-weight:550;color:var(--rail-ink);position:relative}
+.rail nav button svg{width:20px;height:20px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.rail nav button[hidden]{display:none}
+.rail nav button:hover{background:var(--navy2);color:#fff}
+.rail nav button[aria-current="page"]{background:var(--navy2);color:#fff}
+.rail nav button[aria-current="page"]::before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--brass)}
+.rail nav button:focus-visible{outline:2px solid var(--brass);outline-offset:-2px}
+.rail nav .sep{height:1px;background:var(--navy3);margin:10px 8px}
+.rail nav .dot{width:8px;height:8px;border-radius:50%;margin-left:auto;background:transparent}
+.rail nav .dot[data-level="ok"],.rail nav .dot[data-level="done"]{background:#46C383}
+.rail nav .dot[data-level="warn"]{background:var(--brass)}
+.rail nav .dot[data-level="exit"]{background:#EE6B57;animation:pulse 1.2s ease-in-out infinite}
+.rail-user{border-top:1px solid var(--navy3);padding:14px 10px 0;display:flex;flex-direction:column;gap:2px}
+.rail-user b{color:#fff;font-size:14px} .rail-user span{font-size:12px}
+.rail-user button{all:unset;cursor:pointer;margin-top:10px;font-size:13px;color:var(--brass2);font-weight:600}
+.rail-user button:hover{text-decoration:underline}
+.rail-user button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.rail-shade{display:none}
+.main{min-width:0;display:flex;flex-direction:column}
+.topbar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;flex-wrap:wrap;gap:8px 18px;padding:calc(10px + env(safe-area-inset-top,0px)) 24px 10px}
+.topbar h1{margin:0;font-size:24px;font-stretch:118%;font-weight:800;line-height:1.1}
+.topbar .px{display:flex;flex-direction:column;line-height:1.15}
+.topbar .px .price{font-size:22px}
+.topbar .px .sub{font-size:12px}
+.topbar .grow{flex:1}
+.topbar .src{font-size:12px;color:var(--mute);max-width:280px;text-align:right}
+.pill{font-size:13px;font-weight:650;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--panel);white-space:nowrap}
+.pill.p{color:var(--bull);border-color:color-mix(in srgb,var(--bull) 45%,var(--line))}
+.pill.n{color:var(--bear);border-color:color-mix(in srgb,var(--bear) 45%,var(--line))}
+#sessPill[data-on="2"]{color:var(--gold);border-color:color-mix(in srgb,var(--gold) 50%,var(--line))}
+#railBtn{display:none;padding:7px 10px;background:transparent;color:var(--ink);border:1px solid var(--line)}
+#railBtn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;display:block}
+.limit{margin:12px 24px 0;padding:10px 14px;border-radius:8px;background:color-mix(in srgb,var(--bear) 12%,var(--panel));border:1px solid var(--bear);color:var(--bear);font-weight:650;font-size:14px}
+.main > .status{margin:8px 24px 0}
+.main > .status:empty{display:none}
+.views{padding:18px 24px 48px;max-width:1320px;width:100%}
+.view > section,.view > .card{margin-top:16px}
+.view > section:first-child,.view > .vh + section{margin-top:0}
+.vh{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 16px;margin:4px 0 16px}
+.vh h2{margin:0;font-size:clamp(24px,3vw,32px);font-stretch:118%;font-weight:800;letter-spacing:-.01em}
+.vh p{margin:4px 0 0;color:var(--mute);max-width:70ch}
+.vh .tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.card > h3,.card-h h3{margin:0 0 12px;font-size:17px;font-weight:750}
+.card-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.card-h h3{margin-bottom:12px}
+button.sm{padding:5px 10px;font-size:13px}
+button.danger{color:var(--bear);border-color:color-mix(in srgb,var(--bear) 40%,var(--line))}
+.msg{font-size:14px;margin:10px 0 0;min-height:18px}
+.msg.err,.err{color:var(--bear)}
+.warnline{color:var(--gold);font-size:13px;margin:10px 0 0}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px 16px}
+.form-grid label,.fl{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--mute)}
+.form-grid input,.form-grid select,.fl input,.fl select,.fl textarea{color:var(--ink);width:100%}
+.form-grid .hint{font-size:12px;color:var(--mute)}
+.row-btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;align-items:center}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.stat span{font-size:13px;color:var(--mute)}
+.stat b{font-size:26px;font-weight:750;font-stretch:108%;line-height:1.1}
+.stat small{font-size:12px;color:var(--mute)}
+.meter{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:4px}
+.meter i{display:block;height:100%;background:var(--bear)}
+.stat:nth-child(3) .meter i{background:var(--gold)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-size:12px;font-weight:600;color:var(--mute);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+td.act{white-space:nowrap;text-align:right} td.act button{margin-left:6px}
+td.note{color:var(--mute);max-width:260px}
+.scroll{overflow-x:auto}
+.tag{font-size:12px;font-weight:650;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.tag.ok{background:color-mix(in srgb,var(--bull) 15%,transparent);color:var(--bull)}
+.tag.warn{background:color-mix(in srgb,var(--gold) 18%,transparent);color:var(--gold)}
+.tag.off{background:var(--bg);color:var(--mute)}
+.empty-state{padding:26px 6px;text-align:center;color:var(--mute)}
+.empty-state b{display:block;color:var(--ink);margin-bottom:4px}
+/* ----- Ma journée ----- */
+.day-hero{display:grid;grid-template-columns:minmax(220px,320px) minmax(0,1fr);gap:28px;align-items:center;background:var(--navy);color:#E9EDF4;border-radius:14px;padding:26px 30px}
+.day-hero .date{margin:0;color:var(--brass2);font-weight:600;font-size:14px}
+.day-hero h1{margin:4px 0 8px;font-size:clamp(28px,3.6vw,42px);font-stretch:122%;font-weight:800;line-height:1.05;color:#fff}
+.day-hero .sess{margin:0 0 14px;font-size:16px;color:#D6DDE8;max-width:62ch;line-height:1.45}
+.day-hero p{margin:8px 0 0;color:#D6DDE8;font-size:15px}
+.day-hero p b{color:#fff}
+.day-hero a{color:var(--brass2);font-weight:600;font-size:14px}
+.day-hero .p{color:#46C383} .day-hero .n{color:#EE6B57}
+.pos-mini{font-weight:650}
+.pos-mini[data-level="exit"]{color:#EE6B57} .pos-mini[data-level="warn"]{color:var(--brass2)} .pos-mini[data-level="ok"],.pos-mini[data-level="done"]{color:#46C383}
+#rose svg{width:100%;height:auto;display:block}
+.rose-bg{fill:#0F1A2E;stroke:#2E4266;stroke-width:2}
+.rose-tick{stroke:#3B5079;stroke-width:1.2} .rose-tick.major{stroke:var(--brass);stroke-width:2}
+.rose-h{fill:#8C9AB3;font:600 11px Archivo,system-ui,sans-serif;text-anchor:middle}
+.rose-track{fill:none;stroke:#1E2D4A;stroke-width:9}
+.rose-arc{fill:none;stroke-width:9;stroke-linecap:round;opacity:.38}
+.rose-arc.on{opacity:1}
+.rose-needle{stroke:var(--brass2);stroke-width:3;stroke-linecap:round}
+.rose-hub{fill:var(--navy);stroke:var(--brass);stroke-width:2}
+.rose-time{fill:#fff;font:800 17px Archivo,system-ui,sans-serif;text-anchor:middle;font-stretch:110%}
+.rose-sub{fill:#8C9AB3;font:500 9px Archivo,system-ui,sans-serif;text-anchor:middle}
+.rose-legend{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:6px 18px}
+.rose-legend li{display:grid;grid-template-columns:10px auto 1fr;grid-template-rows:auto auto;column-gap:8px;font-size:13px;color:#8C9AB3;align-items:center}
+.rose-legend li i{width:10px;height:10px;border-radius:3px;grid-row:1 / 3;opacity:.45}
+.rose-legend li.on i{opacity:1}
+.rose-legend li b{color:#D6DDE8;font-weight:650} .rose-legend li.on b{color:#fff}
+.rose-legend li em{font-style:normal;grid-column:2 / 4;font-size:12px}
+.rose-legend li.on em{color:var(--brass2)}
+.day-verdict{margin:16px 0;padding:12px 16px;border-radius:10px;font-weight:650;border:1px solid var(--line);background:var(--panel)}
+.day-verdict[data-level="ok"]{border-left:5px solid var(--bull)}
+.day-verdict[data-level="good"]{border-left:5px solid var(--gold)}
+.day-verdict[data-level="stop"]{border-left:5px solid var(--bear);color:var(--bear)}
+.day-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}
+.day-grid .wide{grid-column:1 / -1}
+#checklist{list-style:none;margin:0;padding:0}
+#checklist li{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+#checklist label{display:flex;gap:10px;align-items:flex-start;flex:1;cursor:pointer;font-size:15px}
+#checklist input{width:18px;height:18px;margin-top:2px;accent-color:var(--bull);flex:none}
+#checklist input:checked + span{color:var(--mute);text-decoration:line-through}
+#checklist .x{background:transparent;color:var(--mute);border:0;font-size:18px;padding:0 6px;line-height:1}
+#checkCount{font-size:13px;color:var(--mute);font-weight:600}
+#checkCount[data-full="1"]{color:var(--bull)}
+#checkAdd{display:flex;gap:8px;margin-top:12px}
+#checkAdd input{flex:1}
+#dayPlan{width:100%;min-height:230px;font:inherit;font-size:15px;line-height:1.5;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px 14px;resize:vertical}
+#planSaved{font-size:12px;color:var(--mute)}
+#dayTrades{list-style:none;margin:0;padding:0}
+#dayTrades li{display:grid;grid-template-columns:52px 1fr auto;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+#dayTrades li span{color:var(--mute)} #dayTrades li em{font-style:normal;font-weight:700}
+#dayTrades li.empty{display:block;color:var(--mute)}
+/* ----- Journal ----- */
+.j-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin-top:16px}
+#jCurve svg{width:100%;height:200px;display:block}
+#jCurve .zero{stroke:var(--line);stroke-width:1;stroke-dasharray:4 4}
+#jCurve .line{fill:none;stroke-width:2.5;vector-effect:non-scaling-stroke}
+#jCurve .line.p{stroke:var(--bull)} #jCurve .line.n{stroke:var(--bear)}
+#jCurve .area.p{fill:color-mix(in srgb,var(--bull) 12%,transparent)} #jCurve .area.n{fill:color-mix(in srgb,var(--bear) 12%,transparent)}
+.curve-legend{display:flex;justify-content:space-between;font-size:13px;color:var(--mute);margin-top:6px}
+/* ----- Calcul du risque ----- */
+.rk{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.rk-main{display:flex;flex-direction:column;gap:4px;padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.rk-main span{color:var(--mute);font-size:14px}
+.rk-main b{font-size:40px;font-stretch:115%;font-weight:800;line-height:1.05;color:var(--gold)}
+.rk-main small{color:var(--mute);font-size:13px}
+.rk-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:0}
+.rk-grid dt{font-size:12px;color:var(--mute)} .rk-grid dd{margin:2px 0 0;font-size:17px;font-weight:700}
+/* ----- Réglages ----- */
+.set-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.set-grid .wide{grid-column:1 / -1}
+.set-grid .controls{margin:0 0 6px}
+/* ----- Fenêtres ----- */
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);padding:0;width:min(560px,calc(100vw - 24px));box-shadow:0 20px 60px rgba(10,18,34,.35)}
+dialog::backdrop{background:rgba(10,18,34,.55)}
+dialog form{padding:22px 24px;display:flex;flex-direction:column;gap:12px}
+dialog h2{margin:0;font-size:21px;font-stretch:112%;font-weight:750}
+dialog textarea{min-height:110px;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;resize:vertical}
+dialog .row-btns{justify-content:flex-end}
+dialog .row-btns .left{margin-right:auto}
+/* ----- Ajustements des blocs existants ----- */
+.conf,.pos,.flow,.trade{margin-top:16px}
+.view .grid{margin-top:16px}
+.view details{margin-top:12px}
+/* ----- Mobile ----- */
+@media (max-width:1100px){.day-grid,.j-grid,.rk,.set-grid{grid-template-columns:1fr}}
+@media (max-width:900px){
+  .app{grid-template-columns:1fr}
+  .rail{position:fixed;left:0;top:0;bottom:0;width:260px;transform:translateX(-100%);transition:transform .22s ease}
+  body.rail-open .rail{transform:none}
+  body.rail-open .rail-shade{display:block;position:fixed;inset:0;background:rgba(10,18,34,.5);z-index:25}
+  #railBtn{display:inline-flex}
+  .topbar{padding-left:14px;padding-right:14px}
+  .topbar .src,.topbar .px .sub{display:none}
+  .topbar h1{font-size:21px}
+  .views{padding:14px 14px 40px}
+  .limit,.main > .status{margin-left:14px;margin-right:14px}
+  .day-hero{grid-template-columns:1fr;padding:22px}
+  #rose{max-width:260px;margin:0 auto}
+}
+@media (prefers-reduced-motion:reduce){.rail{transition:none}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
-<div class="wrap">
-  <div class="top">
-    <div>
-      <div class="brand">Boussole Trading</div>
+<div class="app">
+  <aside class="rail" id="rail" aria-label="Menu">
+    <div class="rail-brand"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="29" fill="none" stroke="#C8A24A" stroke-width="3"/><path d="M32 9 L38.5 32 L32 55 L25.5 32 Z" fill="#C8A24A"/><path d="M32 9 L38.5 32 L25.5 32 Z" fill="#E6C46A"/><circle cx="32" cy="32" r="3.5" fill="#14213A"/></svg><span>Boussole</span></div>
+    <nav aria-label="Navigation principale">
+      <button type="button" data-view="journee"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5 13 13l-4.5 2.5L11 11z"/></svg><span>Ma journée</span></button>
+      <button type="button" data-view="marche"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Marché</span></button>
+      <button type="button" data-view="graphique"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M17 6v12"/><rect x="5" y="8" width="4" height="7" rx="1"/><rect x="15" y="9" width="4" height="5" rx="1"/></svg><span>Graphique et entrées</span></button>
+      <button type="button" data-view="position"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.8"/></svg><span>Ma position</span><i class="dot" id="navPosDot"></i></button>
+      <div class="sep"></div>
+      <button type="button" data-view="journal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11M9 8h6"/></svg><span>Journal</span></button>
+      <button type="button" data-view="risque"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6z"/><path d="M9 12h6"/></svg><span>Calcul du risque</span></button>
+      <div class="sep"></div>
+      <button type="button" data-view="reglages"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span>Réglages</span></button>
+      <button type="button" data-view="admin" data-admin hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/></svg><span>Équipe</span></button>
+      <button type="button" data-view="aide"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01"/></svg><span>Aide</span></button>
+    </nav>
+    <div class="rail-user"><b id="meLabel"></b><span id="meRole"></span><button type="button" id="logout">Se déconnecter</button></div>
+  </aside>
+  <div class="rail-shade" id="railShade"></div>
+
+  <div class="main">
+    <header class="topbar">
+      <button type="button" id="railBtn" aria-label="Ouvrir le menu"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
       <h1><select id="instrument" class="inst" aria-label="Marché analysé"><option value="gold">XAU/USD</option><option value="nasdaq">Nasdaq 100</option></select></h1>
-      <div class="sub" id="srcLabel">Tendance sur 5 min, 15 min, 30 min, 1 h et 4 h</div>
-    </div>
-    <div style="text-align:right">
-      <div class="price" id="price">—</div>
-      <div class="sub" id="updated">Pas encore chargé</div>
-    </div>
-  </div>
+      <div class="px"><span class="price" id="price">—</span><span class="sub" id="updated">Pas encore chargé</span></div>
+      <span class="live" id="live" data-state="off">Temps réel arrêté</span>
+      <span class="pill" id="sessPill">Sessions</span>
+      <span class="pill" id="dayPill">Jour 0 R</span>
+      <span class="grow"></span>
+      <span class="src" id="srcLabel">Tendance sur 5 min, 15 min, 30 min, 1 h et 4 h</span>
+    </header>
+    <div class="limit" id="limitBanner" hidden role="alert"></div>
+    <div class="status" id="status"></div>
 
-  <div class="controls">
-    <select id="source" aria-label="Source des données"></select>
-    <input id="key" type="password" placeholder="Clé API Twelve Data" aria-label="Clé API Twelve Data" hidden>
-    <button id="go">Actualiser</button>
-    <label class="chk"><input type="checkbox" id="auto" checked> <span id="autoText">Temps réel</span></label>
-    <span class="live" id="live" data-state="off">Temps réel arrêté</span>
-  </div>
-  <div class="ctbox" id="ctbox" hidden>
-    <div class="ctgrid">
-      <label>Client ID <input id="ctId" type="text" autocomplete="off" spellcheck="false"></label>
-      <label>Client secret <input id="ctSecret" type="password" autocomplete="off"></label>
-      <label>Jeton d'accès <input id="ctToken" type="password" autocomplete="off"></label>
-      <label>Environnement <select id="ctEnv"><option value="demo">Démo</option><option value="live">Réel</option></select></label>
-      <label>Compte <select id="ctAccount"><option value="">Choisi après connexion</option></select></label>
-      <label>Symbole <input id="ctSymbol" type="text" autocomplete="off" spellcheck="false"></label>
-    </div>
-    <div class="ctfoot">
-      <button type="button" id="ctConnect">Se connecter à cTrader</button>
-      <span>Ces accès restent enregistrés dans ce navigateur, sur cet ordinateur. L'application ne fait que lire les prix : elle ne passe aucun ordre.</span>
-    </div>
-  </div>
-  <div class="status" id="status"></div>
+    <main class="views">
+      <div class="view" id="view-journee" data-view="journee" hidden>
+        <div class="day-hero">
+          <div id="rose"></div>
+          <div>
+            <p class="date" id="today"></p>
+            <h1 id="hello">Bonjour.</h1>
+            <p class="sess" id="sessText"></p>
+            <ul class="rose-legend" id="roseLegend"></ul>
+            <p id="dayBias"></p>
+            <p id="dayPos"></p>
+            <p><a href="#" data-go="marche">Voir l'analyse du marché</a></p>
+          </div>
+        </div>
+        <p class="day-verdict" id="dayVerdict" data-level="ok"></p>
+        <div class="stats" id="dayStats"></div>
+        <div class="day-grid">
+          <section class="card">
+            <div class="card-h"><h3>Avant de trader</h3><span id="checkCount"></span></div>
+            <ul id="checklist"></ul>
+            <form id="checkAdd"><input id="checkNew" maxlength="120" placeholder="Ajouter un point à vérifier" aria-label="Nouveau point de la checklist"><button type="submit" class="ghost">Ajouter</button></form>
+          </section>
+          <section class="card">
+            <div class="card-h"><h3>Mon plan du jour</h3><span id="planSaved"></span></div>
+            <textarea id="dayPlan" aria-label="Mon plan du jour" placeholder="Biais du jour (acheteur, vendeur, neutre) :&#10;Zones clés à surveiller :&#10;Annonces économiques à éviter :&#10;Ce que je ne ferai pas aujourd'hui :"></textarea>
+          </section>
+          <section class="card wide">
+            <h3>Calendrier économique</h3>
+            <p class="muted" style="margin-top:-6px">Annonces importantes du jour (États-Unis, zone euro, Royaume-Uni, Chine, Japon). Évite d'entrer en position quelques minutes avant une annonce forte.</p>
+            <div id="calendar"></div>
+          </section>
+          <section class="card wide">
+            <div class="card-h"><h3>Trades du jour</h3><a href="#" data-go="journal">Ouvrir le journal</a></div>
+            <ul id="dayTrades"></ul>
+          </section>
+        </div>
+      </div>
 
-  <section class="conf" aria-label="Confluence des unités de temps">
+      <div class="view" id="view-marche" data-view="marche" hidden>
+        <div class="vh"><div><h2>Marché</h2><p>La tendance sur chaque unité de temps, le volume en direct et les zones où acheteurs et vendeurs interviennent.</p></div></div>
+        <section class="conf" aria-label="Confluence des unités de temps">
     <div class="verdict">
       <h2 id="vTitle">En attente des données</h2>
       <span class="score" id="vScore"></span>
@@ -273,40 +497,8 @@ footer{margin-top:18px;font-size:12px;color:var(--mute);max-width:80ch}
     </div>
     <div class="ticks"><span>Baissier</span><span>Neutre</span><span>Haussier</span></div>
   </section>
-
-
-  <section class="pos" aria-label="Ma position">
-    <div class="pos-head">
-      <h2>Ma position</h2>
-      <span class="pos-badge" id="posBadge" data-level="none">Aucune position</span>
-    </div>
-    <div id="posEmpty">
-      <p class="muted">Quand tu entres sur le marché, déclare ta position ici. L'application la surveille en continu et te dit quand sortir si le marché se retourne contre toi.</p>
-      <div class="pos-btns">
-        <button type="button" id="posFromPlan">Je suis entré avec le plan actuel</button>
-        <button type="button" id="posImport" class="ghost" hidden>Importer ma position cTrader</button>
-      </div>
-      <p class="muted" id="posMsg"></p>
-    </div>
-    <div id="posActive" hidden>
-      <p class="pos-advice" id="posAdvice" data-level="ok"></p>
-      <dl class="pos-stats" id="posStats"></dl>
-      <div class="pos-edit">
-        <label>Stop loss <input id="posSl" type="text" inputmode="decimal" autocomplete="off"></label>
-        <label>Take profit <input id="posTp" type="text" inputmode="decimal" autocomplete="off"></label>
-        <label>Surveillée sur <select id="posTf"></select></label>
-      </div>
-      <ul class="pos-checks" id="posChecks"></ul>
-      <div class="stop-box" id="stopBox"></div>
-      <div class="pos-btns">
-        <button type="button" id="posClose">J'ai fermé ma position</button>
-        <label class="chk"><input type="checkbox" id="posSound" checked> Alerte sonore quand la situation se dégrade</label>
-      </div>
-    </div>
-    <div class="pos-hist" id="posHist"></div>
-  </section>
-
-  <section class="flow" aria-label="Volume et zones">
+        <div class="grid" id="grid"></div>
+        <section class="flow" aria-label="Volume et zones">
     <div class="pos-head"><h2>Volume et zones</h2>
       <label class="chk"><input type="checkbox" id="volSound" checked> Alerte sonore sur afflux de volume</label></div>
     <div class="vol-alert" id="volAlert" hidden role="alert">
@@ -326,8 +518,10 @@ footer{margin-top:18px;font-size:12px;color:var(--mute);max-width:80ch}
     </div>
     <p class="muted" id="volQuality"></p>
   </section>
+      </div>
 
-  <section class="trade" aria-label="Graphique et plan de trade">
+      <div class="view" id="view-graphique" data-view="graphique" hidden>
+        <section class="trade" aria-label="Graphique et plan de trade">
     <div class="trade-head">
       <h2>Graphique</h2>
       <div class="seg" id="views" role="group" aria-label="Type de graphique">
@@ -377,10 +571,156 @@ footer{margin-top:18px;font-size:12px;color:var(--mute);max-width:80ch}
     <p class="muted" id="propCtx">En attente des données.</p>
     <div class="props" id="props"></div>
   </section>
+      </div>
 
-  <div class="grid" id="grid"></div>
+      <div class="view" id="view-position" data-view="position" hidden>
+        <section class="pos" aria-label="Ma position">
+    <div class="pos-head">
+      <h2>Ma position</h2>
+      <span class="pos-badge" id="posBadge" data-level="none">Aucune position</span>
+    </div>
+    <div id="posEmpty">
+      <p class="muted">Quand tu entres sur le marché, déclare ta position ici. L'application la surveille en continu et te dit quand sortir si le marché se retourne contre toi.</p>
+      <div class="pos-btns">
+        <button type="button" id="posFromPlan">Je suis entré avec le plan actuel</button>
+        <button type="button" id="posImport" class="ghost" hidden>Importer ma position cTrader</button>
+      </div>
+      <p class="muted" id="posMsg"></p>
+    </div>
+    <div id="posActive" hidden>
+      <p class="pos-advice" id="posAdvice" data-level="ok"></p>
+      <dl class="pos-stats" id="posStats"></dl>
+      <div class="pos-edit">
+        <label>Stop loss <input id="posSl" type="text" inputmode="decimal" autocomplete="off"></label>
+        <label>Take profit <input id="posTp" type="text" inputmode="decimal" autocomplete="off"></label>
+        <label>Surveillée sur <select id="posTf"></select></label>
+      </div>
+      <ul class="pos-checks" id="posChecks"></ul>
+      <div class="stop-box" id="stopBox"></div>
+      <div class="pos-btns">
+        <button type="button" id="posClose">J'ai fermé ma position</button>
+        <label class="chk"><input type="checkbox" id="posSound" checked> Alerte sonore quand la situation se dégrade</label>
+      </div>
+    </div>
+    <div class="pos-hist" id="posHist"></div>
+  </section>
+      </div>
 
-  <details id="cthelp">
+      <div class="view" id="view-journal" data-view="journal" hidden>
+        <div class="vh"><div><h2>Journal</h2><p>Chaque position clôturée y est enregistrée. Note ce que tu as ressenti et si tu as respecté tes règles : c'est là que tu progresses.</p></div>
+          <div class="tools">
+            <select id="jPeriod" aria-label="Période"><option value="today">Aujourd'hui</option><option value="7">7 derniers jours</option><option value="30" selected>30 derniers jours</option><option value="90">90 derniers jours</option><option value="all">Depuis le début</option></select>
+            <select id="jInst" aria-label="Marché"><option value="all">Tous les marchés</option><option value="gold">XAU/USD</option><option value="nasdaq">Nasdaq 100</option></select>
+            <button type="button" class="ghost" id="jCsv">Exporter en CSV</button>
+            <button type="button" id="jAdd">Ajouter un trade</button>
+          </div></div>
+        <div class="stats" id="jStats"></div>
+        <div class="j-grid">
+          <section class="card"><h3>Courbe des résultats</h3><div id="jCurve"></div></section>
+          <section class="card"><h3>Par configuration</h3><div id="jSetups" class="scroll"></div></section>
+        </div>
+        <section class="card"><h3>Trades</h3><div id="jTable" class="scroll"></div></section>
+      </div>
+
+      <div class="view" id="view-risque" data-view="risque" hidden>
+        <div class="vh"><div><h2>Calcul du risque</h2><p>Combien de lots prendre pour ne risquer qu'un pourcentage choisi de ton capital, quel que soit l'écart de ton stop.</p></div></div>
+        <div class="rk">
+          <section class="card">
+            <div class="card-h"><h3>Ton trade sur <span id="rkInst"></span></h3></div>
+            <div class="form-grid">
+              <label>Capital du compte <input id="rkCap" inputmode="decimal"></label>
+              <label>Risque par trade (%) <input id="rkPct" inputmode="decimal"></label>
+              <label>Prix d'entrée <input id="rkEntry" inputmode="decimal"></label>
+              <label>Stop loss <input id="rkSl" inputmode="decimal"></label>
+              <label>Objectif (facultatif) <input id="rkTp" inputmode="decimal"></label>
+              <label>Pas de lot <input id="rkStep" inputmode="decimal" value="0.01"></label>
+              <label style="grid-column:1/-1">Gain ou perte pour 1 lot quand le prix bouge de 1 <input id="rkPv" inputmode="decimal"><span class="hint">XAU/USD : 100 pour un lot standard de 100 onces. NAS100 : souvent 1 par point, mais vérifie la fiche du contrat chez ton broker.</span></label>
+            </div>
+            <div class="row-btns"><button type="button" class="ghost" id="rkFill">Reprendre mon plan ou ma position</button><span class="msg" id="rkMsg"></span></div>
+          </section>
+          <section class="card"><h3>Résultat</h3><div id="rkOut"></div></section>
+        </div>
+      </div>
+
+      <div class="view" id="view-reglages" data-view="reglages" hidden>
+        <div class="vh"><div><h2>Réglages</h2><p>Tes sources de données, tes règles de risque et ton compte.</p></div></div>
+        <div class="set-grid">
+          <section class="card wide">
+            <h3>Données de marché</h3>
+            <div class="controls">
+    <select id="source" aria-label="Source des données"></select>
+    <input id="key" type="password" placeholder="Clé API Twelve Data" aria-label="Clé API Twelve Data" hidden>
+    <button id="go">Actualiser</button>
+    <label class="chk"><input type="checkbox" id="auto" checked> <span id="autoText">Temps réel</span></label>
+  </div>
+            <div class="ctbox" id="ctbox" hidden>
+    <div class="ctgrid">
+      <label>Client ID <input id="ctId" type="text" autocomplete="off" spellcheck="false"></label>
+      <label>Client secret <input id="ctSecret" type="password" autocomplete="off"></label>
+      <label>Jeton d'accès <input id="ctToken" type="password" autocomplete="off"></label>
+      <label>Environnement <select id="ctEnv"><option value="demo">Démo</option><option value="live">Réel</option></select></label>
+      <label>Compte <select id="ctAccount"><option value="">Choisi après connexion</option></select></label>
+      <label>Symbole <input id="ctSymbol" type="text" autocomplete="off" spellcheck="false"></label>
+    </div>
+    <div class="ctfoot">
+      <button type="button" id="ctConnect">Se connecter à cTrader</button>
+      <span>Ces accès restent enregistrés dans ce navigateur, sur cet ordinateur. L'application ne fait que lire les prix : elle ne passe aucun ordre.</span>
+    </div>
+  </div>
+          </section>
+          <section class="card">
+            <h3>Règles du jour</h3>
+            <form id="rulesForm">
+              <div class="form-grid">
+                <label>Perte maximale par jour (en R) <input id="stMaxLoss" inputmode="decimal"></label>
+                <label>Trades maximum par jour <input id="stMaxTrades" inputmode="numeric"></label>
+              </div>
+              <div class="row-btns"><button type="submit">Enregistrer les règles</button><span class="msg" id="rulesMsg"></span></div>
+            </form>
+            <p class="muted">Quand une limite est atteinte, la plateforme te le signale partout et te demande confirmation avant toute nouvelle position.</p>
+          </section>
+          <section class="card">
+            <h3>Mon compte</h3>
+            <p class="muted" style="margin-top:-6px">Connecté en tant que <b id="meName"></b></p>
+            <form id="pwForm">
+              <div class="form-grid">
+                <label>Mot de passe actuel <input id="pwCur" type="password" autocomplete="current-password" required></label>
+                <label>Nouveau mot de passe <input id="pwNew" type="password" autocomplete="new-password" minlength="8" required></label>
+                <label>Confirmer <input id="pwNew2" type="password" autocomplete="new-password" minlength="8" required></label>
+              </div>
+              <div class="row-btns"><button type="submit">Changer le mot de passe</button></div>
+              <p class="msg" id="pwMsg"></p>
+            </form>
+          </section>
+          <section class="card wide">
+            <h3>Notifications</h3>
+            <p class="muted" style="margin-top:-6px">Reçois une alerte système quand ta position doit être sécurisée ou fermée, ou quand un gros volume arrive, même si l'onglet est en arrière-plan.</p>
+            <div class="row-btns"><button type="button" class="ghost" id="notifBtn">Autoriser les notifications</button><span class="msg" id="notifMsg"></span></div>
+          </section>
+        </div>
+      </div>
+
+      <div class="view" id="view-admin" data-view="admin" hidden>
+        <div class="vh"><div><h2>Équipe</h2><p>Crée les comptes des traders et gère leurs accès. Chaque trader a ses propres données et son propre journal.</p></div></div>
+        <section class="card">
+          <h3>Ajouter un trader</h3>
+          <form id="uForm">
+            <div class="form-grid">
+              <label>Nom <input id="uName" maxlength="60" required></label>
+              <label>Identifiant de connexion <input id="uLogin" autocapitalize="none" spellcheck="false" pattern="[a-zA-Z0-9._\-]{3,32}" required></label>
+              <label>Mot de passe provisoire <input id="uPw" type="password" minlength="8" autocomplete="new-password" required></label>
+              <label>Rôle <select id="uRole"><option value="trader">Trader</option><option value="admin">Administrateur</option></select></label>
+            </div>
+            <div class="row-btns"><button type="button" class="ghost" id="uGen">Générer un mot de passe</button><button type="submit">Créer le compte</button></div>
+            <p class="msg" id="uMsg"></p>
+          </form>
+        </section>
+        <section class="card"><h3>Comptes</h3><div id="uTable" class="scroll"></div></section>
+      </div>
+
+      <div class="view" id="view-aide" data-view="aide" hidden>
+        <div class="vh"><div><h2>Aide</h2><p>Comment fonctionnent les calculs, et comment connecter ton compte cTrader.</p></div></div>
+        <details id="cthelp">
     <summary>Comment obtenir mes accès cTrader</summary>
     <ol>
       <li>Va sur openapi.ctrader.com et connecte-toi avec ton cTrader ID, le même identifiant que pour cTrader.</li>
@@ -414,10 +754,52 @@ footer{margin-top:18px;font-size:12px;color:var(--mute);max-width:80ch}
     <p>PAXG est un jeton adossé à l'or qui suit le prix de l'once de très près mais cote 24h/24, y compris le week-end. Avec Binance, chaque transaction met à jour les bougies du graphique instantanément, et la tendance se recalcule chaque seconde ; une bougie en cours peut donc faire changer un critère avant sa clôture. Pour le vrai XAU/USD, crée une clé gratuite sur twelvedata.com : l'offre gratuite n'a pas de flux temps réel et limite à 800 requêtes par jour, d'où l'actualisation toutes les 10 minutes.</p>
     <p>Pour le Nasdaq 100, Binance ne propose pas de cotation, et l'offre gratuite de Twelve Data ne couvre pas les indices. La source gratuite est donc l'ETF QQQ, qui réplique le Nasdaq 100 : la tendance est la même, mais ses prix (autour de quelques centaines de dollars) ne correspondent pas aux points du NAS100 de Pepperstone. L'indice NDX lui-même nécessite une clé Twelve Data payante. QQQ ne cote que pendant les heures de bourse américaines. Pour des niveaux d'entrée directement en points NAS100, utilise le script Pine sur le graphique PEPPERSTONE:NAS100.</p>
   </details>
-  <footer>Outil d'aide à la lecture du marché, pas un conseil en investissement. Les indicateurs de tendance sont en retard sur le prix et ne garantissent aucun résultat : utilise toujours un stop et une gestion du risque.</footer>
+        <footer>Outil d'aide à la lecture du marché, pas un conseil en investissement. Les indicateurs de tendance sont en retard sur le prix et ne garantissent aucun résultat : utilise toujours un stop et une gestion du risque.</footer>
+      </div>
+    </main>
+  </div>
 </div>
 
-<script>
+<dialog id="tradeDlg">
+  <form id="tradeForm">
+    <h2 id="tdTitle">Trade</h2>
+    <p id="tdSummary" style="margin:0"></p>
+    <div id="tdManual" class="form-grid" hidden>
+      <label>Marché <select name="minst"></select></label>
+      <label>Sens <select name="mdir"><option value="1">Achat</option><option value="-1">Vente</option></select></label>
+      <label>Prix d'entrée <input name="mentry" inputmode="decimal"></label>
+      <label>Prix de sortie <input name="mexit" inputmode="decimal"></label>
+      <label>Stop loss initial <input name="msl" inputmode="decimal"></label>
+      <label>Date de sortie <input name="mdate" type="datetime-local"></label>
+    </div>
+    <div class="form-grid">
+      <label>Configuration <select name="setup"></select></label>
+      <label>Émotion pendant le trade <select name="emotion"></select></label>
+      <label>As-tu respecté tes règles ? <select name="rules"><option value="">Choisir</option><option value="1">Oui</option><option value="0">Non</option></select></label>
+    </div>
+    <label class="fl">Ce que tu retiens de ce trade <textarea name="notes" maxlength="4000" placeholder="Pourquoi tu es entré, ce qui s'est bien ou mal passé, ce que tu feras différemment."></textarea></label>
+    <p class="msg err" id="tdErr"></p>
+    <div class="row-btns">
+      <button type="button" class="ghost danger left" id="tdDelete">Supprimer</button>
+      <button type="button" class="ghost" id="tdCancel">Plus tard</button>
+      <button type="submit">Enregistrer</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="pwDlg">
+  <form id="pwDlgForm">
+    <h2>Choisis ton mot de passe</h2>
+    <p class="muted" style="margin:0">Ton compte utilise un mot de passe provisoire. Remplace-le par un mot de passe personnel d'au moins 8 caractères.</p>
+    <label class="fl">Mot de passe provisoire <input id="pdCur" type="password" autocomplete="current-password" required></label>
+    <label class="fl">Nouveau mot de passe <input id="pdNew" type="password" autocomplete="new-password" minlength="8" required></label>
+    <label class="fl">Confirmer <input id="pdNew2" type="password" autocomplete="new-password" minlength="8" required></label>
+    <p class="msg" id="pdMsg"></p>
+    <div class="row-btns"><button type="submit">Enregistrer mon mot de passe</button></div>
+  </form>
+</dialog>
+
+<script type="text/plain" id="appcode">
 function ema(v, n) {
   if (v.length < n) return [];
   const k = 2 / (n + 1), out = new Array(v.length).fill(null);
@@ -499,7 +881,7 @@ const fmt = (x, d = 2) => x == null ? "—" : x.toLocaleString("fr-FR", { minimu
 let timer = null, busy = false, ws = null, wsRetry = 0, wsTimer = null, dirty = false, lastTick = 0;
 const candles = {}, errors = {};
 
-function store(k, v) { try { v === undefined ? (v = localStorage.getItem(k)) : localStorage.setItem(k, v); return v; } catch { return null; } }
+function store(k, v) { const P = window.__P || ""; try { if (v === undefined) return localStorage.getItem(P + k); localStorage.setItem(P + k, v); if (window.__sync) window.__sync(k, v); return v; } catch { return v === undefined ? null : v; } }
 
 const INSTR = {
   gold: { name: "XAU/USD", tv: "PEPPERSTONE:XAUUSD", sources: {
@@ -906,6 +1288,8 @@ function posClose() {
   const hist = JSON.parse(store("hist-" + inst) || "[]");
   hist.unshift({ dir: pos.dir, entry: pos.entry, exit: px, r: px == null ? null : pos.dir * (px - pos.entry) / risk, t: Date.now() });
   store("hist-" + inst, JSON.stringify(hist.slice(0, 10)));
+  if (window.__onTradeClosed) window.__onTradeClosed({ instrument: inst, dir: pos.dir, entry: pos.entry, exit: px, sl0: pos.sl0, sl: pos.sl, tp: pos.tp,
+    r: px == null ? null : pos.dir * (px - pos.entry) / risk, pnl: px == null ? null : pos.dir * (px - pos.entry), tf: pos.tf, source: pos.src, opened_at: pos.openT, closed_at: Date.now() });
   pos = null; posSave(); posLevel = 0; document.title = titleBase(); posUI(); drawLines(); setPropSlLine(null); $("stopBox").innerHTML = ""; $("stopBox").dataset.html = ""; queueOverlay();
 }
 function posUI() {
@@ -1144,13 +1528,13 @@ function drawOverlay() {
   /* séparateurs de jours (unités intraday) */
   if (DUR[chartTf] <= 36e5) {
     g.setLineDash([2, 4]); g.strokeStyle = rgba("--mute", 0.28); g.lineWidth = 1;
-    g.font = "500 10px Archivo, system-ui, sans-serif"; g.fillStyle = rgba("--mute", 0.8); g.textAlign = "left"; g.textBaseline = "bottom";
+    g.font = "600 10px Archivo, system-ui, sans-serif"; g.fillStyle = rgba("--mute", 0.85); g.textAlign = "left"; g.textBaseline = "top";
     for (let i = 1; i < arr.length; i++) {
       const a = new Date(arr[i - 1].t), b = new Date(arr[i].t);
       if (a.getDate() === b.getDate()) continue;
       const x = X(arr[i].t); if (x == null || x < 0 || x > pw) continue;
       g.beginPath(); g.moveTo(Math.round(x) + 0.5, 0); g.lineTo(Math.round(x) + 0.5, ph); g.stroke();
-      g.fillText(b.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" }), x + 4, ph - 4);
+      g.fillText(b.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" }), x + 4, 40);
     }
     g.setLineDash([]);
   }
@@ -1420,6 +1804,7 @@ function initChart() {
   if (!window.LightweightCharts) { $("chart").innerHTML = '<p class="chart-err">Le graphique n\'a pas pu se charger. Vérifie ta connexion internet puis recharge la page.</p>'; return; }
   chart = LightweightCharts.createChart($("chart"), {
     autoSize: true,
+    localization: { locale: "fr-FR", priceFormatter: p => fmt(p) },
     crosshair: { mode: 0, vertLine: { style: 3, width: 1 }, horzLine: { style: 3, width: 1 } },
     timeScale: { rightOffset: 8, barSpacing: 8, minBarSpacing: 3, timeVisible: true, secondsVisible: false },
     rightPriceScale: { scaleMargins: { top: 0.06, bottom: 0.18 } },
@@ -1759,6 +2144,410 @@ $("key").addEventListener("change", () => { store("xau-key", $("key").value.trim
 $("go").addEventListener("click", start);
 $("auto").addEventListener("change", start);
 start();
+</script>
+<script type="text/plain" id="extcode">/* =====================================================================
+   Boussole Trading : coquille de l'application, journée, journal,
+   calcul du risque, réglages et équipe (s'exécute après le moteur)
+   ===================================================================== */
+const ME = window.__ME;
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+async function api(path, opts = {}) {
+  const o = Object.assign({ headers: {} }, opts);
+  if (o.json !== undefined) { o.body = JSON.stringify(o.json); o.headers["Content-Type"] = "application/json"; delete o.json; }
+  const r = await fetch(path, o);
+  if (r.status === 401) { location.replace("/login"); throw new Error("Session expirée."); }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || "Erreur " + r.status);
+  return j;
+}
+const dayKey = (t = Date.now()) => { const d = new Date(t); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+const startOfDay = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
+const fmtR = r => r == null ? "—" : (r > 0 ? "+" : "") + fmt(r, 1) + " R";
+const pn = v => v > 0 ? "p" : v < 0 ? "n" : "";
+function rules() { try { return Object.assign({ maxLoss: 3, maxTrades: 5, riskPct: 1, capital: 10000 }, JSON.parse(store("rules") || "{}")); } catch { return { maxLoss: 3, maxTrades: 5, riskPct: 1, capital: 10000 }; } }
+
+/* ---------- navigation ---------- */
+const VIEWS = ["journee", "marche", "graphique", "position", "journal", "risque", "reglages", "admin", "aide"];
+function showView(v) {
+  if (!VIEWS.includes(v) || (v === "admin" && ME.role !== "admin")) v = "journee";
+  document.querySelectorAll(".view").forEach(s => s.hidden = s.dataset.view !== v);
+  document.querySelectorAll(".rail nav button").forEach(b => b.setAttribute("aria-current", b.dataset.view === v ? "page" : "false"));
+  store("view", v); document.body.classList.remove("rail-open");
+  if (v === "graphique") setTimeout(() => { try { queueOverlay(); } catch {} }, 60);
+  if (v === "journal") loadJournal();
+  if (v === "admin") loadUsers();
+  if (v === "risque") calcRisk();
+  if (v === "journee") { renderDay(); loadCalendar(); }
+  window.scrollTo(0, 0);
+}
+
+/* ---------- sessions de marché ---------- */
+const SESS = [
+  { name: "Sydney", tz: "Australia/Sydney", o: 7, c: 16, col: "#6A8CAF" },
+  { name: "Tokyo", tz: "Asia/Tokyo", o: 9, c: 18, col: "#8A5CB8" },
+  { name: "Londres", tz: "Europe/London", o: 8, c: 17, col: "#2F6FB0" },
+  { name: "New York", tz: "America/New_York", o: 8, c: 17, col: "#C8A24A" },
+];
+function tzOffsetMin(tz, t = Date.now()) {
+  const p = new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).formatToParts(new Date(t));
+  const g = k => +p.find(x => x.type === k).value;
+  return (Date.UTC(g("year"), g("month") - 1, g("day"), g("hour"), g("minute")) - Math.floor(t / 60000) * 60000) / 60000;
+}
+function sessionState(now = Date.now()) {
+  const loc = -new Date(now).getTimezoneOffset();
+  const isWeekend = (() => { const d = new Date(now), wd = d.getUTCDay(), h = d.getUTCHours(); return wd === 6 || (wd === 0 && h < 21) || (wd === 5 && h >= 22); })();
+  return SESS.map(s => {
+    const off = tzOffsetMin(s.tz, now);
+    const startLocal = ((s.o * 60 - off + loc) % 1440 + 1440) % 1440, endLocal = ((s.c * 60 - off + loc) % 1440 + 1440) % 1440;
+    const tzMin = ((Math.floor(now / 60000) + off) % 1440 + 1440) % 1440;
+    const wd = new Date(now + off * 60000).getUTCDay();
+    const open = !isWeekend && wd >= 1 && wd <= 5 && tzMin >= s.o * 60 && tzMin < s.c * 60;
+    let mins = open ? s.c * 60 - tzMin : (s.o * 60 - tzMin + 1440) % 1440;
+    return Object.assign({}, s, { open, startLocal, endLocal, mins });
+  });
+}
+const hm = m => { m = Math.round(m); return m >= 60 ? Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0") : m + " min"; };
+const clock = m => String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(Math.round(m % 60)).padStart(2, "0");
+function sessionSentence(S) {
+  const open = S.filter(s => s.open);
+  if (!open.length) { const nx = [...S].sort((a, b) => a.mins - b.mins)[0]; return "Aucune grande place ouverte. " + nx.name + " ouvre dans " + hm(nx.mins) + "."; }
+  const names = open.map(s => s.name);
+  let t = (names.length > 1 ? names.slice(0, -1).join(", ") + " et " + names[names.length - 1] + " sont ouverts" : names[0] + " est ouvert");
+  if (open.some(s => s.name === "Londres") && open.some(s => s.name === "New York")) t += " : c'est le moment de la journée où l'or et le Nasdaq bougent le plus";
+  const nx = S.filter(s => !s.open).sort((a, b) => a.mins - b.mins)[0];
+  return t + "." + (nx && nx.mins < 300 ? " " + nx.name + " ouvre dans " + hm(nx.mins) + "." : "");
+}
+function arc(cx, cy, r, a0, a1) {
+  const p = a => [cx + r * Math.sin(a), cy - r * Math.cos(a)];
+  let d = a1 - a0; if (d <= 0) d += Math.PI * 2;
+  const [x0, y0] = p(a0), [x1, y1] = p(a0 + d);
+  return "M" + x0.toFixed(1) + " " + y0.toFixed(1) + " A" + r + " " + r + " 0 " + (d > Math.PI ? 1 : 0) + " 1 " + x1.toFixed(1) + " " + y1.toFixed(1);
+}
+function drawRose() {
+  const el = $("rose"); if (!el) return;
+  const S = sessionState(), now = new Date(), mins = now.getHours() * 60 + now.getMinutes(), A = m => m / 1440 * Math.PI * 2;
+  let svg = '<svg viewBox="0 0 300 300" role="img" aria-label="Sessions de marché sur 24 heures"><circle cx="150" cy="150" r="146" class="rose-bg"/>';
+  for (let h = 0; h < 24; h++) {
+    const a = A(h * 60), r1 = h % 6 === 0 ? 120 : 126, x = 150 + 134 * Math.sin(a), y = 150 - 134 * Math.cos(a);
+    svg += '<line x1="' + (150 + r1 * Math.sin(a)).toFixed(1) + '" y1="' + (150 - r1 * Math.cos(a)).toFixed(1) + '" x2="' + (150 + 130 * Math.sin(a)).toFixed(1) + '" y2="' + (150 - 130 * Math.cos(a)).toFixed(1) + '" class="rose-tick' + (h % 6 === 0 ? " major" : "") + '"/>';
+    if (h % 3 === 0) svg += '<text x="' + x.toFixed(1) + '" y="' + (y + 4).toFixed(1) + '" class="rose-h">' + h + "</text>";
+  }
+  S.forEach((s, i) => {
+    const r = 108 - i * 15;
+    svg += '<circle cx="150" cy="150" r="' + r + '" class="rose-track"/>';
+    svg += '<path d="' + arc(150, 150, r, A(s.startLocal), A(s.endLocal)) + '" stroke="' + s.col + '" class="rose-arc' + (s.open ? " on" : "") + '"><title>' + s.name + " " + clock(s.startLocal) + " à " + clock(s.endLocal) + "</title></path>";
+  });
+  const a = A(mins);
+  svg += '<line x1="150" y1="150" x2="' + (150 + 112 * Math.sin(a)).toFixed(1) + '" y2="' + (150 - 112 * Math.cos(a)).toFixed(1) + '" class="rose-needle"/><circle cx="150" cy="150" r="30" class="rose-hub"/>';
+  svg += '<text x="150" y="148" class="rose-time">' + clock(mins) + '</text><text x="150" y="166" class="rose-sub">heure locale</text></svg>';
+  el.innerHTML = svg;
+  $("roseLegend").innerHTML = S.map(s => '<li class="' + (s.open ? "on" : "") + '"><i style="background:' + s.col + '"></i><b>' + s.name + "</b><span>" + clock(s.startLocal) + " à " + clock(s.endLocal) + "</span><em>" + (s.open ? "ouvert, ferme dans " + hm(s.mins) : "ouvre dans " + hm(s.mins)) + "</em></li>").join("");
+  $("sessText").textContent = sessionSentence(S);
+  const open = S.filter(s => s.open).map(s => s.name);
+  $("sessPill").textContent = open.length ? open.join(" + ") : "Marchés calmes";
+  $("sessPill").dataset.on = open.length > 1 ? "2" : open.length ? "1" : "0";
+}
+
+/* ---------- résultats du jour et limites ---------- */
+let today = { trades: [], loaded: false };
+async function loadToday() {
+  try { today.trades = await api("/api/trades?from=" + startOfDay()); today.loaded = true; } catch { }
+  renderDay();
+}
+function dayStatus() {
+  const R = rules(), t = today.trades, sum = t.reduce((a, x) => a + (x.r || 0), 0);
+  const lossHit = sum <= -R.maxLoss, countHit = t.length >= R.maxTrades;
+  return { R, sum, n: t.length, wins: t.filter(x => x.r > 0).length, lossHit, countHit, stop: lossHit || countHit };
+}
+function renderDay() {
+  if (!$("dayStats")) return;
+  const s = dayStatus(), R = s.R;
+  $("dayPill").textContent = "Jour " + fmtR(s.n ? s.sum : 0);
+  $("dayPill").className = "pill " + (s.stop ? "n" : pn(s.sum));
+  const lossPct = Math.min(100, Math.max(0, -s.sum / R.maxLoss * 100));
+  $("dayStats").innerHTML =
+    '<div class="stat"><span>Résultat du jour</span><b class="' + pn(s.sum) + '">' + fmtR(s.n ? s.sum : 0) + "</b><small>" + s.n + " trade" + (s.n > 1 ? "s" : "") + (s.n ? ", " + s.wins + " gagnant" + (s.wins > 1 ? "s" : "") : "") + "</small></div>" +
+    '<div class="stat"><span>Perte maximale autorisée</span><b>' + fmt(R.maxLoss, 1) + ' R</b><div class="meter"><i style="width:' + lossPct + '%"></i></div><small>' + (s.sum < 0 ? fmt(-s.sum, 1) + " R utilisés" : "Aucune perte aujourd'hui") + "</small></div>" +
+    '<div class="stat"><span>Trades autorisés</span><b>' + s.n + " / " + R.maxTrades + '</b><div class="meter"><i style="width:' + Math.min(100, s.n / R.maxTrades * 100) + '%"></i></div><small>' + (R.maxTrades - s.n > 0 ? "Encore " + (R.maxTrades - s.n) : "Plus aucun") + "</small></div>";
+  const st = $("dayVerdict");
+  if (s.lossHit) { st.dataset.level = "stop"; st.textContent = "Limite de perte du jour atteinte. Arrête de trader aujourd'hui : la meilleure décision est de revenir demain avec la tête reposée."; }
+  else if (s.countHit) { st.dataset.level = "stop"; st.textContent = "Nombre maximal de trades atteint pour aujourd'hui. Analyse tes trades dans le journal plutôt que d'en ouvrir d'autres."; }
+  else if (s.sum >= 2 * Math.max(1, R.maxLoss / 1.5)) { st.dataset.level = "good"; st.textContent = "Belle journée. Pense à protéger ce résultat : réduis ta taille ou arrête-toi là."; }
+  else { st.dataset.level = "ok"; st.textContent = "Tu peux trader. Respecte ton plan et ta checklist avant chaque entrée."; }
+  $("limitBanner").hidden = !s.stop; $("limitBanner").textContent = st.textContent;
+  const b = typeof lastGlobal === "number" ? lastGlobal : 0;
+  $("dayBias").innerHTML = "<b>" + esc(INSTR[inst].name) + "</b> : " + (b >= 40 ? "biais acheteur" : b <= -40 ? "biais vendeur" : b >= 15 ? "légèrement haussier" : b <= -15 ? "légèrement baissier" : "pas de direction claire") + ' <span class="' + pn(b) + '">(' + (b > 0 ? "+" : "") + b + ")</span>";
+  $("dayPos").innerHTML = pos ? "Position en cours : <b>" + (pos.dir > 0 ? "achat" : "vente") + "</b> à " + fmt(pos.entry) + ', <span class="pos-mini" data-level="' + ($("posBadge").dataset.level || "") + '">' + esc($("posBadge").textContent) + "</span>" : "Aucune position en cours.";
+  const last = today.trades.slice(0, 5);
+  $("dayTrades").innerHTML = last.length ? last.map(t => '<li><span>' + new Date(t.closed_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) + "</span><b>" + (t.dir > 0 ? "Achat" : "Vente") + " " + esc(INSTR[t.instrument] ? INSTR[t.instrument].name : t.instrument || "") + '</b><em class="' + pn(t.r) + '">' + fmtR(t.r) + "</em></li>").join("") : '<li class="empty">Aucun trade clôturé aujourd\'hui.</li>';
+}
+
+/* ---------- checklist et plan du jour ---------- */
+const DEFAULT_CHECK = ["J'ai regardé le calendrier économique du jour", "Je connais la tendance du 1 h et du 4 h", "Mes zones clés sont notées dans mon plan", "Mon risque par trade est défini", "Je suis reposé et concentré"];
+function checkItems() { try { return JSON.parse(store("check-items") || "null") || DEFAULT_CHECK; } catch { return DEFAULT_CHECK; } }
+function renderChecklist() {
+  const items = checkItems(), done = JSON.parse(store("check-" + dayKey()) || "[]");
+  $("checklist").innerHTML = items.map((t, i) => '<li><label><input type="checkbox" data-i="' + i + '"' + (done.includes(i) ? " checked" : "") + "> <span>" + esc(t) + '</span></label><button type="button" class="x" data-del="' + i + '" aria-label="Retirer cet élément">×</button></li>').join("");
+  const n = done.filter(i => i < items.length).length;
+  $("checkCount").textContent = n + " sur " + items.length;
+  $("checkCount").dataset.full = n === items.length ? "1" : "0";
+}
+function initDay() {
+  $("checklist").addEventListener("change", e => {
+    const i = +e.target.dataset.i, k = "check-" + dayKey(); let d = JSON.parse(store(k) || "[]");
+    d = e.target.checked ? [...new Set([...d, i])] : d.filter(x => x !== i); store(k, JSON.stringify(d)); renderChecklist();
+  });
+  $("checklist").addEventListener("click", e => {
+    const b = e.target.closest("button[data-del]"); if (!b) return;
+    const it = checkItems(); it.splice(+b.dataset.del, 1); store("check-items", JSON.stringify(it)); store("check-" + dayKey(), "[]"); renderChecklist();
+  });
+  $("checkAdd").addEventListener("submit", e => {
+    e.preventDefault(); const v = $("checkNew").value.trim(); if (!v) return;
+    store("check-items", JSON.stringify([...checkItems(), v.slice(0, 120)])); $("checkNew").value = ""; renderChecklist();
+  });
+  const pk = () => "dayplan-" + dayKey();
+  $("dayPlan").value = store(pk()) || "";
+  let tt; $("dayPlan").addEventListener("input", () => { clearTimeout(tt); $("planSaved").textContent = "…"; tt = setTimeout(() => { store(pk(), $("dayPlan").value.slice(0, 8000)); $("planSaved").textContent = "Enregistré"; }, 700); });
+  $("hello").textContent = (new Date().getHours() < 18 ? "Bonjour, " : "Bonsoir, ") + ME.displayName + ".";
+  $("today").textContent = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+  renderChecklist();
+}
+let calLoaded = null;
+function loadCalendar() {
+  const box = $("calendar"); if (!box) return;
+  const theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  if (calLoaded === theme) return; calLoaded = theme;
+  box.innerHTML = '<div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div></div>';
+  const sc = document.createElement("script");
+  sc.src = "https://s3.tradingview.com/external-embedding/embed-widget-events.js"; sc.async = true;
+  sc.innerHTML = JSON.stringify({ colorTheme: theme, isTransparent: true, width: "100%", height: 520, locale: "fr", importanceFilter: "0,1", countryFilter: "us,eu,gb,cn,jp" });
+  sc.onerror = () => { box.innerHTML = '<p class="muted">Le calendrier n\'a pas pu se charger. Désactive ton bloqueur de publicité pour ce site ou consulte un calendrier économique en ligne.</p>'; };
+  box.firstChild.appendChild(sc);
+}
+
+/* ---------- journal ---------- */
+let journal = [];
+const EMOTIONS = ["Calme", "Confiant", "Impatient", "Stressé", "Euphorique", "Frustré", "Fatigué"];
+const SETUPS = ["Repli EMA 20", "Cassure", "Rebond sur zone", "Rejet de zone", "Afflux de volume", "Autre"];
+async function loadJournal() {
+  const per = $("jPeriod").value, from = per === "all" ? 0 : per === "today" ? startOfDay() : Date.now() - (+per) * 86400000;
+  try { journal = await api("/api/trades?from=" + from); } catch (e) { $("jTable").innerHTML = '<p class="err">' + esc(e.message) + "</p>"; return; }
+  renderJournal();
+}
+function renderJournal() {
+  const ins = $("jInst").value, T = journal.filter(t => ins === "all" || t.instrument === ins);
+  const rs = T.map(t => t.r || 0), wins = rs.filter(r => r > 0), losses = rs.filter(r => r < 0);
+  const tot = rs.reduce((a, b) => a + b, 0), gp = wins.reduce((a, b) => a + b, 0), gl = -losses.reduce((a, b) => a + b, 0);
+  const rated = T.filter(t => t.rules_ok != null), ok = rated.filter(t => t.rules_ok === 1).length;
+  const st = [["Trades", T.length, ""], ["Taux de réussite", T.length ? fmt(wins.length / T.length * 100, 0) + " %" : "—", ""], ["Total", fmtR(tot), pn(tot)],
+    ["Moyenne par trade", T.length ? fmtR(tot / T.length) : "—", pn(tot)], ["Profit factor", gl ? fmt(gp / gl, 2) : wins.length ? "∞" : "—", gp >= gl ? "p" : "n"],
+    ["Règles respectées", rated.length ? fmt(ok / rated.length * 100, 0) + " %" : "—", ""]];
+  $("jStats").innerHTML = st.map(s => '<div class="stat"><span>' + s[0] + '</span><b class="' + s[2] + '">' + s[1] + "</b></div>").join("");
+  /* courbe des résultats cumulés */
+  const asc = [...T].sort((a, b) => a.closed_at - b.closed_at); let c = 0; const pts = [0, ...asc.map(t => (c += t.r || 0))];
+  if (pts.length > 1) {
+    const W = 800, H = 200, mn = Math.min(0, ...pts), mx = Math.max(0, ...pts), sp = (mx - mn) || 1, X = i => i / (pts.length - 1) * W, Y = v => H - 10 - (v - mn) / sp * (H - 20);
+    const d = pts.map((v, i) => (i ? "L" : "M") + X(i).toFixed(1) + " " + Y(v).toFixed(1)).join(" ");
+    $("jCurve").innerHTML = '<svg viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" role="img" aria-label="Courbe des résultats cumulés en R"><line x1="0" x2="' + W + '" y1="' + Y(0) + '" y2="' + Y(0) + '" class="zero"/><path d="' + d + " L" + W + " " + Y(0) + " L0 " + Y(0) + ' Z" class="area ' + (c >= 0 ? "p" : "n") + '"/><path d="' + d + '" class="line ' + (c >= 0 ? "p" : "n") + '"/></svg><div class="curve-legend"><span>Début</span><span>Résultat cumulé : <b class="' + pn(c) + '">' + fmtR(c) + "</b></span></div>";
+  } else $("jCurve").innerHTML = '<p class="muted">La courbe apparaîtra après ton premier trade clôturé.</p>';
+  /* par configuration */
+  const by = {}; T.forEach(t => { const k = t.setup || "Non renseigné"; (by[k] = by[k] || []).push(t.r || 0); });
+  $("jSetups").innerHTML = Object.keys(by).length ? "<table><thead><tr><th>Configuration</th><th>Trades</th><th>Réussite</th><th>Total</th></tr></thead><tbody>" + Object.entries(by).sort((a, b) => b[1].reduce((x, y) => x + y, 0) - a[1].reduce((x, y) => x + y, 0)).map(([k, v]) => { const s = v.reduce((a, b) => a + b, 0); return "<tr><td>" + esc(k) + "</td><td>" + v.length + "</td><td>" + fmt(v.filter(r => r > 0).length / v.length * 100, 0) + ' %</td><td class="' + pn(s) + '">' + fmtR(s) + "</td></tr>"; }).join("") + "</tbody></table>" : "";
+  /* liste */
+  $("jTable").innerHTML = T.length ? '<table class="trades"><thead><tr><th>Date</th><th>Marché</th><th>Sens</th><th>Entrée</th><th>Sortie</th><th>Résultat</th><th>Configuration</th><th>Émotion</th><th>Règles</th><th>Notes</th><th></th></tr></thead><tbody>' + T.map(t =>
+    "<tr><td>" + new Date(t.closed_at).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) + "</td><td>" + esc(INSTR[t.instrument] ? INSTR[t.instrument].name : t.instrument || "") + '</td><td class="' + (t.dir > 0 ? "p" : "n") + '">' + (t.dir > 0 ? "Achat" : "Vente") + "</td><td>" + fmt(t.entry) + "</td><td>" + (t.exit == null ? "—" : fmt(t.exit)) + '</td><td class="' + pn(t.r) + '"><b>' + fmtR(t.r) + "</b></td><td>" + esc(t.setup || "—") + "</td><td>" + esc(t.emotion || "—") + "</td><td>" + (t.rules_ok == null ? "—" : t.rules_ok ? '<span class="p">Oui</span>' : '<span class="n">Non</span>') + '</td><td class="note">' + esc((t.notes || "").slice(0, 80)) + '</td><td class="act"><button type="button" class="ghost sm" data-edit="' + t.id + '">Modifier</button></td></tr>').join("") + "</tbody></table>"
+    : '<div class="empty-state"><b>Aucun trade sur cette période.</b><p>Clôture une position depuis la vue Position, ou ajoute un trade fait ailleurs avec « Ajouter un trade ».</p></div>';
+}
+function csvExport() {
+  const head = ["date", "marche", "sens", "entree", "sortie", "sl_initial", "r", "configuration", "emotion", "regles_respectees", "notes"];
+  const rows = journal.map(t => [new Date(t.closed_at).toISOString(), t.instrument, t.dir > 0 ? "achat" : "vente", t.entry, t.exit, t.sl0, t.r, t.setup, t.emotion, t.rules_ok == null ? "" : t.rules_ok ? "oui" : "non", t.notes]
+    .map(v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"').join(";"));
+  const blob = new Blob(["\ufeff" + [head.join(";"), ...rows].join("\n")], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "journal-boussole-" + dayKey() + ".csv"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/* ---------- fenêtre « trade » : bilan à la clôture, modification, ajout manuel ---------- */
+let dlgTrade = null;
+function openTradeDlg(t, mode) {
+  dlgTrade = Object.assign({}, t); const f = $("tradeForm");
+  $("tdTitle").textContent = mode === "close" ? "Position clôturée : ton bilan" : mode === "new" ? "Ajouter un trade" : "Modifier le trade";
+  $("tdManual").hidden = mode !== "new"; $("tdDelete").hidden = mode !== "edit";
+  $("tdSummary").innerHTML = mode === "new" ? "" : (t.dir > 0 ? "Achat" : "Vente") + " " + esc(INSTR[t.instrument] ? INSTR[t.instrument].name : t.instrument || "") + " à " + fmt(t.entry) + ", sortie à " + (t.exit == null ? "—" : fmt(t.exit)) + ' : <b class="' + pn(t.r) + '">' + fmtR(t.r) + "</b>";
+  f.setup.value = t.setup || ""; f.emotion.value = t.emotion || ""; f.notes.value = t.notes || "";
+  f.rules.value = t.rules_ok == null ? "" : t.rules_ok ? "1" : "0";
+  if (mode === "new") { f.minst.value = inst; f.mdir.value = "1"; f.mentry.value = ""; f.mexit.value = ""; f.msl.value = ""; f.mdate.value = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16); }
+  $("tdErr").textContent = ""; $("tradeDlg").dataset.mode = mode; $("tradeDlg").showModal();
+}
+async function saveTradeDlg(e) {
+  e.preventDefault();
+  const f = $("tradeForm"), mode = $("tradeDlg").dataset.mode;
+  const meta = { setup: f.setup.value || null, emotion: f.emotion.value || null, notes: f.notes.value.trim() || null, rules_ok: f.rules.value === "" ? null : f.rules.value === "1" };
+  try {
+    if (mode === "new") {
+      const n = v => parseFloat(String(v).replace(",", ".")), en = n(f.mentry.value), ex = n(f.mexit.value), sl = n(f.msl.value), d = +f.mdir.value;
+      if (!isFinite(en) || !isFinite(ex)) throw new Error("Renseigne au moins le prix d'entrée et le prix de sortie.");
+      const r = isFinite(sl) && sl !== en ? d * (ex - en) / Math.abs(en - sl) : null;
+      await api("/api/trades", { method: "POST", json: Object.assign({ instrument: f.minst.value, dir: d, entry: en, exit: ex, sl0: isFinite(sl) ? sl : null, r, pnl: d * (ex - en), source: "manuel", closed_at: new Date(f.mdate.value).getTime() || Date.now() }, meta) });
+    } else if (dlgTrade.id) await api("/api/trades/" + dlgTrade.id, { method: "PATCH", json: meta });
+    $("tradeDlg").close(); loadToday(); if (!$("view-journal").hidden) loadJournal();
+  } catch (err) { $("tdErr").textContent = err.message; }
+}
+window.__onTradeClosed = async t => {
+  try { const r = await api("/api/trades", { method: "POST", json: t }); t.id = r.id; openTradeDlg(t, "close"); }
+  catch (e) { setStatus("Le trade n'a pas pu être enregistré dans ton journal : " + e.message, true); }
+  loadToday();
+};
+
+/* ---------- calcul du risque ---------- */
+function pointValue() { const v = parseFloat(store("pv-" + inst)); return isFinite(v) && v > 0 ? v : inst === "gold" ? 100 : 1; }
+function calcRisk() {
+  if (!$("rkCap")) return;
+  const n = id => parseFloat(String($(id).value).replace(",", "."));
+  const cap = n("rkCap"), pct = n("rkPct"), en = n("rkEntry"), sl = n("rkSl"), tp = n("rkTp"), pv = n("rkPv"), step = n("rkStep") || 0.01;
+  $("rkInst").textContent = INSTR[inst].name;
+  const out = $("rkOut");
+  if (!(cap > 0 && pct > 0 && en > 0 && sl > 0 && pv > 0) || en === sl) { out.innerHTML = '<p class="muted">Renseigne ton capital, ton risque, l\'entrée et le stop pour calculer la taille de position.</p>'; return; }
+  const money = cap * pct / 100, dist = Math.abs(en - sl), perLot = dist * pv, raw = money / perLot, lots = Math.floor(raw / step + 1e-9) * step;
+  const loss = lots * perLot, gain = tp > 0 ? lots * Math.abs(tp - en) * pv : null, ratio = tp > 0 ? Math.abs(tp - en) / dist : null;
+  out.innerHTML = '<div class="rk-main"><span>Taille de position</span><b>' + (lots > 0 ? fmt(lots, step < 0.1 ? 2 : 1) + " lot" + (lots >= 2 ? "s" : "") : "Trop petite") + "</b><small>" + (lots > 0 ? "Calculé : " + fmt(raw, 3) + " lot, arrondi à l'inférieur au pas de " + String(step).replace(".", ",") : "Le stop est trop large pour ce risque : réduis la distance du stop ou augmente le risque.") + "</small></div>" +
+    '<dl class="rk-grid"><div><dt>Montant risqué</dt><dd>' + fmt(money) + "</dd></div><div><dt>Distance du stop</dt><dd>" + fmt(dist) + " " + U() + "</dd></div>" +
+    '<div><dt>Perte si le stop est touché</dt><dd class="n">−' + fmt(loss) + "</dd></div>" + (gain != null ? '<div><dt>Gain si l\'objectif est atteint</dt><dd class="p">+' + fmt(gain) + "</dd></div><div><dt>Ratio</dt><dd>1 : " + fmt(ratio, 1) + "</dd></div>" : "") + "</dl>" +
+    (pct > 2 ? '<p class="warnline">Risquer plus de 2 % par trade expose à des pertes rapides en cas de série perdante. 0,5 à 1 % est une base plus prudente.</p>' : "");
+}
+function initRisk() {
+  const R = rules();
+  $("rkCap").value = R.capital; $("rkPct").value = R.riskPct; $("rkPv").value = pointValue();
+  ["rkCap", "rkPct", "rkEntry", "rkSl", "rkTp", "rkPv", "rkStep"].forEach(id => $(id).addEventListener("input", () => {
+    if (id === "rkPv") store("pv-" + inst, $("rkPv").value);
+    if (id === "rkCap" || id === "rkPct") { const r = rules(); r.capital = parseFloat($("rkCap").value) || r.capital; r.riskPct = parseFloat(String($("rkPct").value).replace(",", ".")) || r.riskPct; store("rules", JSON.stringify(r)); }
+    calcRisk();
+  }));
+  $("rkFill").addEventListener("click", () => {
+    const src = pos ? { e: pos.entry, s: pos.sl, t: pos.tp } : { e: num("entry"), s: num("sl"), t: num("tp") };
+    if (src.e == null || src.s == null) { $("rkMsg").textContent = "Ton plan de trade est vide : prépare une entrée dans la vue Graphique, ou saisis les prix ici."; return; }
+    $("rkEntry").value = src.e.toFixed(2); $("rkSl").value = src.s.toFixed(2); $("rkTp").value = src.t != null ? src.t.toFixed(2) : ""; $("rkMsg").textContent = ""; calcRisk();
+  });
+}
+
+/* ---------- réglages ---------- */
+function initSettings() {
+  const R = rules();
+  $("stMaxLoss").value = R.maxLoss; $("stMaxTrades").value = R.maxTrades;
+  $("rulesForm").addEventListener("submit", e => {
+    e.preventDefault(); const r = rules();
+    r.maxLoss = Math.max(0.5, parseFloat(String($("stMaxLoss").value).replace(",", ".")) || 3); r.maxTrades = Math.max(1, parseInt($("stMaxTrades").value) || 5);
+    store("rules", JSON.stringify(r)); $("rulesMsg").textContent = "Règles enregistrées."; renderDay();
+  });
+  $("pwForm").addEventListener("submit", async e => { e.preventDefault(); await changePw($("pwCur").value, $("pwNew").value, $("pwNew2").value, $("pwMsg")); e.target.reset(); });
+  $("notifBtn").addEventListener("click", async () => {
+    try { const p = await Notification.requestPermission(); $("notifMsg").textContent = p === "granted" ? "Notifications activées." : "Notifications refusées : tu peux les autoriser dans les réglages du navigateur."; }
+    catch { $("notifMsg").textContent = "Ce navigateur ne gère pas les notifications."; }
+  });
+  $("meName").textContent = ME.displayName + " (" + ME.username + ")";
+}
+async function changePw(cur, nw, nw2, msg) {
+  msg.className = "msg";
+  if (nw !== nw2) { msg.textContent = "Les deux nouveaux mots de passe ne correspondent pas."; msg.className = "msg err"; return false; }
+  try { await api("/api/auth/password", { method: "POST", json: { current: cur, next: nw } }); msg.textContent = "Mot de passe modifié. Tes autres sessions ont été déconnectées."; return true; }
+  catch (e) { msg.textContent = e.message; msg.className = "msg err"; return false; }
+}
+
+/* ---------- équipe (administrateur) ---------- */
+const genPw = () => { const a = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"; return Array.from(crypto.getRandomValues(new Uint32Array(12)), x => a[x % a.length]).join(""); };
+async function loadUsers() {
+  if (ME.role !== "admin") return;
+  try {
+    const U_ = await api("/api/admin/users");
+    $("uTable").innerHTML = '<table><thead><tr><th>Nom</th><th>Identifiant</th><th>Rôle</th><th>Statut</th><th>Dernière connexion</th><th>Trades</th><th></th></tr></thead><tbody>' + U_.map(u =>
+      "<tr><td>" + esc(u.display_name || u.username) + "</td><td>" + esc(u.username) + "</td><td>" + (u.role === "admin" ? "Administrateur" : "Trader") + "</td><td>" + (u.active ? (u.must_change ? '<span class="tag warn">Mot de passe provisoire</span>' : '<span class="tag ok">Actif</span>') : '<span class="tag off">Désactivé</span>') + "</td><td>" + (u.last_login ? new Date(u.last_login).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "Jamais") + "</td><td>" + u.trades + '</td><td class="act">' +
+      (u.id === ME.id ? '<span class="muted">C\'est toi</span>' : '<button type="button" class="ghost sm" data-u="' + u.id + '" data-a="pw">Nouveau mot de passe</button><button type="button" class="ghost sm" data-u="' + u.id + '" data-a="' + (u.active ? "off" : "on") + '">' + (u.active ? "Désactiver" : "Réactiver") + '</button><button type="button" class="ghost sm danger" data-u="' + u.id + '" data-a="del" data-n="' + esc(u.username) + '">Supprimer</button>') + "</td></tr>").join("") + "</tbody></table>";
+  } catch (e) { $("uTable").innerHTML = '<p class="err">' + esc(e.message) + "</p>"; }
+}
+function initAdmin() {
+  if (ME.role !== "admin") return;
+  $("uGen").addEventListener("click", () => { $("uPw").value = genPw(); $("uPw").type = "text"; });
+  $("uForm").addEventListener("submit", async e => {
+    e.preventDefault(); const m = $("uMsg"); m.className = "msg";
+    try {
+      await api("/api/admin/users", { method: "POST", json: { displayName: $("uName").value.trim(), username: $("uLogin").value.trim(), password: $("uPw").value, role: $("uRole").value } });
+      m.innerHTML = "Compte créé. Transmets ces accès au trader : identifiant <b>" + esc($("uLogin").value.trim()) + "</b>, mot de passe provisoire <b>" + esc($("uPw").value) + "</b>. Il devra le changer à sa première connexion.";
+      e.target.reset(); $("uPw").type = "password"; loadUsers();
+    } catch (err) { m.textContent = err.message; m.className = "msg err"; }
+  });
+  $("uTable").addEventListener("click", async e => {
+    const b = e.target.closest("button[data-a]"); if (!b) return;
+    const id = b.dataset.u, a = b.dataset.a, m = $("uMsg"); m.className = "msg";
+    try {
+      if (a === "pw") { const p = genPw(); await api("/api/admin/users/" + id, { method: "PATCH", json: { password: p } }); m.innerHTML = "Nouveau mot de passe provisoire : <b>" + p + "</b>. Le trader devra le changer à sa prochaine connexion."; }
+      if (a === "off" || a === "on") await api("/api/admin/users/" + id, { method: "PATCH", json: { active: a === "on" } });
+      if (a === "del") { if (!confirm("Supprimer définitivement le compte « " + b.dataset.n + " » et tout son journal ?")) return; await api("/api/admin/users/" + id, { method: "DELETE" }); m.textContent = "Compte supprimé."; }
+      loadUsers();
+    } catch (err) { m.textContent = err.message; m.className = "msg err"; }
+  });
+}
+
+/* ---------- démarrage de la coquille ---------- */
+function initShell() {
+  $("meLabel").textContent = ME.displayName; $("meRole").textContent = ME.role === "admin" ? "Administrateur" : "Trader";
+  document.querySelectorAll('[data-admin]').forEach(el => el.hidden = ME.role !== "admin");
+  document.querySelector(".rail nav").addEventListener("click", e => { const b = e.target.closest("button[data-view]"); if (b) showView(b.dataset.view); });
+  document.addEventListener("click", e => { const a = e.target.closest("[data-go]"); if (a) { e.preventDefault(); showView(a.dataset.go); } });
+  $("railBtn").addEventListener("click", () => document.body.classList.toggle("rail-open"));
+  $("railShade").addEventListener("click", () => document.body.classList.remove("rail-open"));
+  $("logout").addEventListener("click", async () => { try { await api("/api/auth/logout", { method: "POST" }); } catch {} location.replace("/login"); });
+  $("jPeriod").addEventListener("change", loadJournal); $("jInst").addEventListener("change", renderJournal);
+  $("jCsv").addEventListener("click", csvExport); $("jAdd").addEventListener("click", () => openTradeDlg({}, "new"));
+  $("jTable").addEventListener("click", e => { const b = e.target.closest("button[data-edit]"); if (b) openTradeDlg(journal.find(t => t.id === +b.dataset.edit), "edit"); });
+  $("tradeForm").addEventListener("submit", saveTradeDlg);
+  $("tdCancel").addEventListener("click", () => $("tradeDlg").close());
+  $("tdDelete").addEventListener("click", async () => { if (!dlgTrade.id || !confirm("Supprimer ce trade du journal ?")) return; try { await api("/api/trades/" + dlgTrade.id, { method: "DELETE" }); $("tradeDlg").close(); loadJournal(); loadToday(); } catch (e) { $("tdErr").textContent = e.message; } });
+  $("tradeForm").setup.innerHTML = '<option value="">Choisir</option>' + SETUPS.map(s => "<option>" + s + "</option>").join("");
+  $("tradeForm").emotion.innerHTML = '<option value="">Choisir</option>' + EMOTIONS.map(s => "<option>" + s + "</option>").join("");
+  $("tradeForm").minst.innerHTML = Object.entries(INSTR).map(([k, v]) => '<option value="' + k + '">' + v.name + "</option>").join("");
+  /* confirmation si la limite du jour est atteinte */
+  $("posFromPlan").addEventListener("click", e => {
+    const s = dayStatus(); if (!s.stop) return;
+    if (!confirm((s.lossHit ? "Ta limite de perte du jour est atteinte." : "Tu as atteint ton nombre maximal de trades.") + " Veux-tu vraiment ouvrir une nouvelle position ?")) e.stopImmediatePropagation();
+  }, true);
+  if (ME.mustChange) {
+    $("pwDlg").showModal();
+    $("pwDlg").addEventListener("cancel", e => e.preventDefault());
+    $("pwDlgForm").addEventListener("submit", async e => { e.preventDefault(); if (await changePw($("pdCur").value, $("pdNew").value, $("pdNew2").value, $("pdMsg"))) setTimeout(() => $("pwDlg").close(), 900); });
+  }
+  initDay(); initRisk(); initSettings(); initAdmin();
+  $("instrument").addEventListener("change", () => { $("rkPv").value = pointValue(); calcRisk(); renderDay(); });
+  drawRose(); setInterval(drawRose, 30000);
+  setInterval(() => { renderDay(); const lv = $("posBadge").dataset.level; $("navPosDot").dataset.level = pos ? lv : ""; }, 2000);
+  loadToday();
+  showView(store("view") || "journee");
+}
+initShell();
+</script>
+<script>
+/* Démarrage : vérifie la session, charge les données du trader, puis lance la plateforme */
+(async () => {
+  const run = id => { const s = document.createElement("script"); s.textContent = document.getElementById(id).textContent; document.body.appendChild(s); };
+  let me;
+  try {
+    const r = await fetch("/api/auth/me", { cache: "no-store" });
+    if (r.status === 401) { location.replace("/login"); return; }
+    me = (await r.json()).user;
+  } catch { document.getElementById("status").textContent = "Le serveur ne répond pas. Vérifie ta connexion puis recharge la page."; return; }
+  window.__ME = me;
+  const P = window.__P = "u" + me.id + ":";
+  const LOCAL = /^(ct-|xau-key)/;
+  try {
+    const data = await (await fetch("/api/data", { cache: "no-store" })).json();
+    for (const [k, v] of Object.entries(data)) if (!LOCAL.test(k)) try { localStorage.setItem(P + k, v); } catch {}
+  } catch {}
+  const timers = {};
+  window.__sync = (k, v) => {
+    if (LOCAL.test(k)) return;
+    clearTimeout(timers[k]);
+    timers[k] = setTimeout(() => fetch("/api/data/" + encodeURIComponent(k), { method: "PUT", body: v }).catch(() => {}), 800);
+  };
+  run("appcode"); run("extcode");
+})();
 </script>
 </body>
 </html>

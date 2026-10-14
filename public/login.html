@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Connexion | Boussole Trading</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#14213A;--navy2:#1B2C4A;--brass:#C8A24A;--brass2:#E6C46A;--bg:#EEF1F4;--panel:#fff;--ink:#18212E;--mute:#5E6878;--line:#D4DAE2;--bear:#C2412F;
+  color-scheme:light;box-sizing:border-box}
+@media (prefers-color-scheme:dark){:root{--bg:#141B26;--panel:#1C2533;--ink:#E6EAF0;--mute:#97A1B1;--line:#2E3A4C;--bear:#EE6B57;color-scheme:dark}}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0}
+body{font-family:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr)}
+@media (max-width:820px){body{grid-template-columns:1fr}.side{min-height:auto;padding:36px 24px 28px}.side .rose{width:150px;height:150px;margin:0 0 18px}}
+.side{background:var(--navy);color:#E9EDF4;padding:56px clamp(24px,6vw,80px);display:flex;flex-direction:column;justify-content:center;min-height:100vh;position:relative;overflow:hidden}
+.side .rose{width:min(320px,60%);height:auto;aspect-ratio:1;margin:0 0 34px}
+.side h1{margin:0;font-stretch:125%;font-weight:800;font-size:clamp(30px,4.4vw,52px);line-height:1;letter-spacing:-.01em}
+.side p{margin:16px 0 0;max-width:38ch;color:#B9C3D3;font-size:17px;line-height:1.5}
+.side ul{margin:26px 0 0;padding:0;list-style:none;display:grid;gap:10px;color:#D6DDE8;font-size:15px;max-width:42ch}
+.side li{padding-left:22px;position:relative}
+.side li::before{content:"";position:absolute;left:0;top:.55em;width:10px;height:2px;background:var(--brass)}
+main{display:flex;align-items:center;justify-content:center;padding:40px 22px}
+form{width:100%;max-width:380px}
+form h2{margin:0 0 6px;font-size:26px;font-stretch:112%;font-weight:750}
+form .lead{margin:0 0 26px;color:var(--mute);font-size:15px;line-height:1.5}
+label{display:block;font-size:14px;font-weight:600;margin:0 0 6px}
+input{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:16px}
+input:focus{outline:2px solid var(--brass);outline-offset:1px;border-color:var(--brass)}
+button{width:100%;font:inherit;font-size:16px;font-weight:700;color:var(--navy);background:var(--brass);border:0;border-radius:8px;padding:13px;cursor:pointer;margin-top:4px}
+button:hover{background:var(--brass2)} button:disabled{opacity:.6;cursor:wait}
+:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.err{color:var(--bear);font-size:14px;min-height:20px;margin:12px 0 0}
+.note{color:var(--mute);font-size:13px;margin-top:22px;line-height:1.5}
+</style>
+</head>
+<body>
+<aside class="side">
+  <svg class="rose" viewBox="0 0 200 200" aria-hidden="true">
+    <circle cx="100" cy="100" r="96" fill="none" stroke="#2E4266" stroke-width="2"/>
+    <circle cx="100" cy="100" r="78" fill="none" stroke="#C8A24A" stroke-width="1.5" stroke-dasharray="2 6"/>
+    <g stroke="#3B5079" stroke-width="2">
+      <line x1="100" y1="4" x2="100" y2="16"/><line x1="100" y1="184" x2="100" y2="196"/><line x1="4" y1="100" x2="16" y2="100"/><line x1="184" y1="100" x2="196" y2="100"/>
+    </g>
+    <path d="M100 22 L114 100 L100 178 L86 100 Z" fill="#C8A24A"/><path d="M100 22 L114 100 L86 100 Z" fill="#E6C46A"/>
+    <path d="M22 100 L100 88 L178 100 L100 112 Z" fill="#2E4266"/>
+    <circle cx="100" cy="100" r="7" fill="#14213A" stroke="#C8A24A" stroke-width="2"/>
+  </svg>
+  <h1>Boussole Trading</h1>
+  <p>Ta journée de trading au même endroit : la direction du marché, tes entrées et le suivi de tes positions.</p>
+  <ul>
+    <li>Tendance sur 5 unités de temps et zones acheteurs et vendeurs</li>
+    <li>Entrées proposées, stop et objectif calculés</li>
+    <li>Suivi de position, journal et limites de risque du jour</li>
+  </ul>
+</aside>
+<main>
+  <form id="f" novalidate>
+    <h2 id="title">Connexion</h2>
+    <p class="lead" id="lead">Accès réservé aux traders inscrits.</p>
+    <div id="nameRow" hidden>
+      <label for="displayName">Ton nom</label>
+      <input id="displayName" autocomplete="name">
+    </div>
+    <label for="username">Identifiant</label>
+    <input id="username" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+    <label for="password">Mot de passe</label>
+    <input id="password" type="password" autocomplete="current-password" required>
+    <button id="btn" type="submit">Se connecter</button>
+    <p class="err" id="err" role="alert"></p>
+    <p class="note" id="note">Pas encore de compte ? Demande un accès à l'administrateur de la plateforme.</p>
+  </form>
+</main>
+<script>
+let setup = false;
+const $ = id => document.getElementById(id);
+fetch("/api/auth/status").then(r => r.json()).then(s => {
+  if (s.loggedIn) { location.replace("/"); return; }
+  if (s.needsSetup) {
+    setup = true;
+    $("title").textContent = "Configurer la plateforme";
+    $("lead").textContent = "Aucun compte n'existe encore. Crée le compte administrateur : il te permettra ensuite d'ajouter les traders.";
+    $("nameRow").hidden = false; $("password").autocomplete = "new-password";
+    $("btn").textContent = "Créer le compte administrateur";
+    $("note").textContent = "Choisis un mot de passe d'au moins 8 caractères que tu n'utilises nulle part ailleurs.";
+  }
+}).catch(() => { $("err").textContent = "Le serveur ne répond pas. Vérifie ta connexion puis recharge la page."; });
+$("f").addEventListener("submit", async e => {
+  e.preventDefault();
+  const payload = { username: $("username").value.trim(), password: $("password").value, displayName: $("displayName").value.trim() };
+  if (!payload.username || !payload.password) { $("err").textContent = "Saisis ton identifiant et ton mot de passe."; return; }
+  $("btn").disabled = true; $("err").textContent = "";
+  try {
+    const r = await fetch(setup ? "/api/auth/setup" : "/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || "Connexion impossible.");
+    location.replace("/");
+  } catch (err) { $("err").textContent = err.message; $("btn").disabled = false; }
+});
+</script>
+</body>
+</html>
