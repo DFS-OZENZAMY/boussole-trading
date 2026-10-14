@@ -11,6 +11,7 @@ Plateforme d'aide au trading pour les équipes de traders, protégée par mot de
 | **Ma journée** | Rose des sessions (Sydney, Tokyo, Londres, New York) avec l'heure actuelle, biais du marché, résultat du jour, limites de perte et de nombre de trades, checklist avant de trader, plan du jour, calendrier économique |
 | **Marché** | Tendance sur 5 min, 15 min, 30 min, 1 h et 4 h, score global, flux de volume en direct, zones acheteurs et vendeurs |
 | **Graphique et entrées** | Graphique en temps réel (EMA, volume, profil de volume, zones, signaux), plan de trade, entrées proposées, vue TradingView Pepperstone |
+| **Liquidité** | Carte du carnet d'ordres au fil du temps (style heatmap) : murs d'ordres et depuis quand ils tiennent, transactions au marché, carnet actuel, déséquilibre acheteurs / vendeurs près du prix |
 | **Ma position** | Suivi en continu avec verdict (saine, vigilance, sortie conseillée) et propositions pour sécuriser les gains en déplaçant le stop |
 | **Journal** | Chaque position clôturée est enregistrée : statistiques, courbe des résultats en R, résultats par configuration, émotions, respect des règles, export CSV |
 | **Calcul du risque** | Taille de position en lots selon le capital, le risque par trade et la distance du stop |
@@ -50,6 +51,8 @@ Le dossier `functions/` contient les mêmes API au format Cloudflare Pages : la 
 | Binance (PAXG/USDT) | Or (proxy) | Oui, tick par tick | Réel (marché PAXG) | Sans clé |
 | Twelve Data | XAU/USD, QQQ, NDX | Toutes les 10 min | QQQ seulement | Clé gratuite ; NDX payant |
 | **cTrader Open API** | Or, Nasdaq (ton broker) | Oui, tick par tick | Volume en ticks | Ton compte cTrader, en lecture seule |
+
+La vue **Liquidité** utilise le carnet complet de PAXG/USDT sur Binance (instantané de 1 000 niveaux puis mises à jour toutes les 100 ms, avec resynchronisation automatique en cas de trou dans le flux) ou la profondeur de marché de ton broker via cTrader, si celui-ci la diffuse. Twelve Data ne fournit pas de carnet.
 
 ## Script TradingView
 
