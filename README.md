@@ -53,6 +53,8 @@ Le dossier `functions/` contient les mêmes API au format Cloudflare Pages : la 
 | Twelve Data | XAU/USD, QQQ, NDX | Toutes les 10 min | QQQ seulement | Clé gratuite ; NDX payant |
 | **cTrader Open API** | Or, Nasdaq (ton broker) | Oui, tick par tick | Volume en ticks | Ton compte cTrader, en lecture seule |
 
+Avec des accès cTrader enregistrés, la liste des marchés propose aussi **tous les instruments du compte**, groupés par classe d'actifs (liste mise en cache sur l'appareil et rafraîchie une fois par jour). Les prix s'affichent avec le nombre de décimales du symbole chez le broker.
+
 La vue **Liquidité** utilise le carnet complet de PAXG/USDT sur Binance (instantané de 1 000 niveaux puis mises à jour toutes les 100 ms, avec resynchronisation automatique en cas de trou dans le flux) ou la profondeur de marché de ton broker via cTrader, si celui-ci la diffuse. Twelve Data ne fournit pas de carnet.
 
 La vue **Footprint** utilise les transactions de PAXG/USDT sur Binance, avec le côté de l'agresseur : historique récupéré au démarrage par l'API `aggTrades` (jusqu'à 220 requêtes, en remontant les identifiants de transactions), puis flux en direct, avec récupération automatique des transactions manquées après une coupure. Avec cTrader, qui ne diffuse pas les transactions, c'est un footprint en ticks construit en direct.
