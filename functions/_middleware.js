@@ -1,7 +1,7 @@
 import { ensureSchema, currentUser, json } from "../lib/auth.js";
 
 // Pages et API accessibles sans être connecté
-const OPEN = new Set(["/login", "/login.html", "/api/auth/login", "/api/auth/setup", "/api/auth/status", "/favicon.svg"]);
+const OPEN = new Set(["/login", "/login.html", "/api/auth/login", "/api/auth/setup", "/api/auth/register", "/api/auth/status", "/favicon.svg"]);
 
 const SECURITY = {
   "X-Content-Type-Options": "nosniff",

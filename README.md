@@ -15,7 +15,7 @@ Plateforme d'aide au trading pour les équipes de traders, protégée par mot de
 | **Journal** | Chaque position clôturée est enregistrée : statistiques, courbe des résultats en R, résultats par configuration, émotions, respect des règles, export CSV |
 | **Calcul du risque** | Taille de position en lots selon le capital, le risque par trade et la distance du stop |
 | **Réglages** | Source des données (Binance, Twelve Data, cTrader), règles du jour, mot de passe, notifications |
-| **Équipe** | Réservée aux administrateurs : créer les comptes des traders, réinitialiser un mot de passe, désactiver ou supprimer un compte |
+| **Équipe** | Réservée aux administrateurs : valider ou refuser les demandes de compte, ouvrir ou fermer les inscriptions, créer des comptes, réinitialiser un mot de passe, désactiver ou supprimer un compte |
 
 Chaque trader a son propre compte, ses propres réglages, ses positions et son journal, enregistrés dans la base de données. Ses identifiants cTrader restent uniquement dans son navigateur.
 
@@ -27,7 +27,7 @@ La plateforme tourne sur **Cloudflare Workers** (fichier `wrangler.jsonc`, point
 2. **Renseigner son identifiant.** Ouvre la base, copie son **Database ID**, puis dans `wrangler.jsonc`, retire les `//` devant le bloc `d1_databases` et colle l'identifiant.
 3. **Déployer.** Avec Workers relié à GitHub, chaque commit sur `main` redéploie automatiquement (commande de déploiement : `npx wrangler deploy`). En ligne de commande : `npx wrangler deploy`.
 4. **Créer le compte administrateur.** Ouvre l'adresse du site : tant qu'aucun compte n'existe, la page de connexion propose de créer le compte administrateur. Les tables sont créées automatiquement.
-5. **Ajouter les traders** dans la vue **Équipe**, avec un mot de passe provisoire qu'ils remplaceront à leur première connexion.
+5. **Ajouter les traders.** Ils peuvent demander un compte eux-mêmes avec le lien « Créer un compte » de la page de connexion (ou l'adresse `/login#inscription`). Leur compte reste en attente jusqu'à ce qu'un administrateur l'accepte dans la vue **Équipe**, où un badge signale les nouvelles demandes. L'administrateur peut aussi fermer les inscriptions ou créer un compte directement, avec un mot de passe provisoire.
 
 Tant que la base n'est pas reliée, le site affiche une page qui rappelle ces étapes et reste fermé.
 
@@ -37,7 +37,8 @@ Le dossier `functions/` contient les mêmes API au format Cloudflare Pages : la 
 
 - Mots de passe hachés avec PBKDF2-SHA256 (100 000 itérations) et sel aléatoire ; jamais stockés en clair.
 - Sessions par cookie `HttpOnly`, `Secure`, `SameSite=Lax`, valables 30 jours ; seule une empreinte du jeton est stockée en base.
-- Blocage de 15 minutes après 5 tentatives de connexion échouées.
+- Blocage de 15 minutes après 5 tentatives de connexion échouées ; 5 demandes de compte au plus par heure et par connexion.
+- Un compte demandé depuis la page de connexion ne peut pas se connecter avant d'être accepté par un administrateur.
 - Toutes les pages et les API sont protégées, sauf la page de connexion.
 - Changer son mot de passe déconnecte ses autres sessions ; désactiver un compte le déconnecte immédiatement.
 - Chaque trader n'accède qu'à ses propres données.
@@ -68,10 +69,10 @@ src/worker.js      point d'entrée Cloudflare Workers : protection et routage
 wrangler.jsonc     configuration Workers (fichiers, base D1)
 functions/         API serveur (aussi utilisables avec Cloudflare Pages)
   _middleware.js   protection par mot de passe (version Pages)
-  api/auth/        connexion, déconnexion, configuration initiale, mot de passe
+  api/auth/        connexion, inscription, déconnexion, configuration initiale, mot de passe
   api/data/        réglages et données de chaque trader
   api/trades/      journal de trading
-  api/admin/       gestion des comptes (administrateurs)
+  api/admin/       validation et gestion des comptes, ouverture des inscriptions
 lib/auth.js        base de données, hachage des mots de passe, sessions
 pine/              script TradingView
 ```

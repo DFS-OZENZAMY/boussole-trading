@@ -35,6 +35,15 @@ button:hover{background:var(--brass2)} button:disabled{opacity:.6;cursor:wait}
 :focus-visible{outline:2px solid var(--brass);outline-offset:2px}
 .err{color:var(--bear);font-size:14px;min-height:20px;margin:12px 0 0}
 .note{color:var(--mute);font-size:13px;margin-top:22px;line-height:1.5}
+.switch{margin-top:18px;font-size:14px;color:var(--mute)}
+.switch button{all:unset;cursor:pointer;color:var(--ink);font-weight:700;text-decoration:underline;text-decoration-color:var(--brass);text-underline-offset:3px}
+.switch button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.optional{font-weight:400;color:var(--mute)}
+.done{display:none;border:1px solid var(--line);border-left:5px solid var(--brass);border-radius:8px;padding:16px 18px;background:var(--panel);margin-top:4px}
+.done h3{margin:0 0 6px;font-size:18px}
+.done p{margin:0;color:var(--mute);line-height:1.5;font-size:15px}
+form.sent .fields,form.sent #btn,form.sent .note{display:none}
+form.sent .done{display:block}
 </style>
 </head>
 <body>
@@ -61,42 +70,73 @@ button:hover{background:var(--brass2)} button:disabled{opacity:.6;cursor:wait}
   <form id="f" novalidate>
     <h2 id="title">Connexion</h2>
     <p class="lead" id="lead">Accès réservé aux traders inscrits.</p>
-    <div id="nameRow" hidden>
-      <label for="displayName">Ton nom</label>
-      <input id="displayName" autocomplete="name">
+    <div class="fields">
+      <div id="nameRow" hidden>
+        <label for="displayName">Ton nom</label>
+        <input id="displayName" autocomplete="name" maxlength="60">
+      </div>
+      <div id="mailRow" hidden>
+        <label for="email">E-mail <span class="optional">(facultatif, pour que l'administrateur puisse te contacter)</span></label>
+        <input id="email" type="email" autocomplete="email" maxlength="120">
+      </div>
+      <label for="username">Identifiant</label>
+      <input id="username" autocomplete="username" autocapitalize="none" spellcheck="false" required maxlength="32">
+      <label for="password">Mot de passe</label>
+      <input id="password" type="password" autocomplete="current-password" required>
+      <div id="pw2Row" hidden>
+        <label for="password2">Confirme le mot de passe</label>
+        <input id="password2" type="password" autocomplete="new-password">
+      </div>
     </div>
-    <label for="username">Identifiant</label>
-    <input id="username" autocomplete="username" autocapitalize="none" spellcheck="false" required>
-    <label for="password">Mot de passe</label>
-    <input id="password" type="password" autocomplete="current-password" required>
     <button id="btn" type="submit">Se connecter</button>
     <p class="err" id="err" role="alert"></p>
-    <p class="note" id="note">Pas encore de compte ? Demande un accès à l'administrateur de la plateforme.</p>
+    <div class="done" role="status"><h3>Demande envoyée</h3><p>Ton compte a été créé et attend la validation de l'administrateur. Tu pourras te connecter avec ton identifiant et ton mot de passe dès qu'il l'aura accepté.</p></div>
+    <p class="switch" id="switch" hidden></p>
+    <p class="note" id="note"></p>
   </form>
 </main>
 <script>
-let setup = false;
 const $ = id => document.getElementById(id);
+let mode = "login", regOpen = false;
+const MODES = {
+  login: { title: "Connexion", lead: "Accès réservé aux traders inscrits.", btn: "Se connecter", pw: "current-password",
+           note: () => regOpen ? "" : "Pas encore de compte ? Les inscriptions sont fermées pour le moment : demande un accès à l'administrateur." },
+  register: { title: "Créer un compte", lead: "Ton compte sera actif dès que l'administrateur l'aura validé.", btn: "Envoyer ma demande", pw: "new-password",
+              note: () => "Identifiant : 3 à 32 caractères (lettres, chiffres, point, tiret). Mot de passe : au moins 8 caractères." },
+  setup: { title: "Configurer la plateforme", lead: "Aucun compte n'existe encore. Crée le compte administrateur : il te permettra ensuite de valider les traders.", btn: "Créer le compte administrateur", pw: "new-password",
+           note: () => "Choisis un mot de passe d'au moins 8 caractères que tu n'utilises nulle part ailleurs." },
+};
+function setMode(m) {
+  mode = m; const M = MODES[m];
+  $("title").textContent = M.title; $("lead").textContent = M.lead; $("btn").textContent = M.btn; $("note").textContent = M.note();
+  $("password").autocomplete = M.pw; $("err").textContent = "";
+  $("nameRow").hidden = m === "login"; $("mailRow").hidden = m !== "register"; $("pw2Row").hidden = m === "login";
+  const sw = $("switch");
+  sw.hidden = m === "setup" || !regOpen;
+  sw.innerHTML = m === "login" ? 'Pas encore de compte ? <button type="button" id="toReg">Créer un compte</button>' : 'Tu as déjà un compte ? <button type="button" id="toLogin">Se connecter</button>';
+  const b = $("toReg") || $("toLogin"); if (b) b.onclick = () => { $("f").classList.remove("sent"); setMode(m === "login" ? "register" : "login"); (m === "login" ? $("displayName") : $("username")).focus(); };
+}
 fetch("/api/auth/status").then(r => r.json()).then(s => {
   if (s.loggedIn) { location.replace("/"); return; }
-  if (s.needsSetup) {
-    setup = true;
-    $("title").textContent = "Configurer la plateforme";
-    $("lead").textContent = "Aucun compte n'existe encore. Crée le compte administrateur : il te permettra ensuite d'ajouter les traders.";
-    $("nameRow").hidden = false; $("password").autocomplete = "new-password";
-    $("btn").textContent = "Créer le compte administrateur";
-    $("note").textContent = "Choisis un mot de passe d'au moins 8 caractères que tu n'utilises nulle part ailleurs.";
-  }
+  regOpen = !!s.registrationOpen;
+  setMode(s.needsSetup ? "setup" : location.hash === "#inscription" && regOpen ? "register" : "login");
 }).catch(() => { $("err").textContent = "Le serveur ne répond pas. Vérifie ta connexion puis recharge la page."; });
 $("f").addEventListener("submit", async e => {
   e.preventDefault();
-  const payload = { username: $("username").value.trim(), password: $("password").value, displayName: $("displayName").value.trim() };
-  if (!payload.username || !payload.password) { $("err").textContent = "Saisis ton identifiant et ton mot de passe."; return; }
+  const p = { username: $("username").value.trim(), password: $("password").value, displayName: $("displayName").value.trim(), email: $("email").value.trim() };
+  if (!p.username || !p.password) { $("err").textContent = "Saisis ton identifiant et ton mot de passe."; return; }
+  if (mode !== "login") {
+    if (!p.displayName) { $("err").textContent = "Indique ton nom."; return; }
+    if (p.password.length < 8) { $("err").textContent = "Le mot de passe doit contenir au moins 8 caractères."; return; }
+    if (p.password !== $("password2").value) { $("err").textContent = "Les deux mots de passe ne correspondent pas."; return; }
+  }
   $("btn").disabled = true; $("err").textContent = "";
   try {
-    const r = await fetch(setup ? "/api/auth/setup" : "/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    const url = mode === "setup" ? "/api/auth/setup" : mode === "register" ? "/api/auth/register" : "/api/auth/login";
+    const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(p) });
     const j = await r.json();
-    if (!r.ok) throw new Error(j.error || "Connexion impossible.");
+    if (!r.ok) throw new Error(j.error || "Action impossible.");
+    if (mode === "register") { $("f").classList.add("sent"); $("lead").textContent = ""; $("btn").disabled = false; $("f").reset(); return; }
     location.replace("/");
   } catch (err) { $("err").textContent = err.message; $("btn").disabled = false; }
 });

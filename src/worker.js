@@ -3,6 +3,8 @@
 import { ensureSchema, currentUser, json, fail } from "../lib/auth.js";
 import * as status from "../functions/api/auth/status.js";
 import * as setup from "../functions/api/auth/setup.js";
+import * as register from "../functions/api/auth/register.js";
+import * as settings from "../functions/api/admin/settings.js";
 import * as login from "../functions/api/auth/login.js";
 import * as logout from "../functions/api/auth/logout.js";
 import * as me from "../functions/api/auth/me.js";
@@ -15,13 +17,13 @@ import * as users from "../functions/api/admin/users/index.js";
 import * as userId from "../functions/api/admin/users/[id].js";
 
 const ROUTES = [
-  [/^\/api\/auth\/status$/, status], [/^\/api\/auth\/setup$/, setup], [/^\/api\/auth\/login$/, login],
+  [/^\/api\/auth\/status$/, status], [/^\/api\/auth\/setup$/, setup], [/^\/api\/auth\/register$/, register], [/^\/api\/auth\/login$/, login],
   [/^\/api\/auth\/logout$/, logout], [/^\/api\/auth\/me$/, me], [/^\/api\/auth\/password$/, password],
   [/^\/api\/data$/, dataAll], [/^\/api\/data\/(?<key>[^/]+)$/, dataKey],
   [/^\/api\/trades$/, trades], [/^\/api\/trades\/(?<id>\d+)$/, tradeId],
-  [/^\/api\/admin\/users$/, users, true], [/^\/api\/admin\/users\/(?<id>\d+)$/, userId, true],
+  [/^\/api\/admin\/users$/, users, true], [/^\/api\/admin\/users\/(?<id>\d+)$/, userId, true], [/^\/api\/admin\/settings$/, settings, true],
 ];
-const OPEN = new Set(["/login", "/login.html", "/api/auth/login", "/api/auth/setup", "/api/auth/status", "/favicon.svg"]);
+const OPEN = new Set(["/login", "/login.html", "/api/auth/login", "/api/auth/setup", "/api/auth/register", "/api/auth/status", "/favicon.svg"]);
 const SECURITY = {
   "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin",
   "X-Frame-Options": "SAMEORIGIN", "Permissions-Policy": "camera=(), microphone=(), geolocation=()",

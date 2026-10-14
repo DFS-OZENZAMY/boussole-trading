@@ -11,6 +11,7 @@ export async function onRequestPatch({ request, env, data, params }) {
     stmts.push(env.DB.prepare("UPDATE users SET active = ? WHERE id = ?").bind(t.active ? 1 : 0, id));
     if (!t.active) stmts.push(env.DB.prepare("DELETE FROM sessions WHERE user_id = ?").bind(id));
   }
+  if (t.approve === true) stmts.push(env.DB.prepare("UPDATE users SET active = 1, pending = 0 WHERE id = ? AND pending = 1").bind(id));
   if ("role" in t) stmts.push(env.DB.prepare("UPDATE users SET role = ? WHERE id = ?").bind(t.role === "admin" ? "admin" : "trader", id));
   if ("displayName" in t) stmts.push(env.DB.prepare("UPDATE users SET display_name = ? WHERE id = ?").bind(String(t.displayName || "").slice(0, 60), id));
   if (!stmts.length) return fail("Rien à modifier.");
