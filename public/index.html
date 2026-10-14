@@ -591,7 +591,7 @@ dialog .row-btns .left{margin-right:auto}
       <h2>Graphique</h2>
       <div class="seg" id="views" role="group" aria-label="Type de graphique">
         <button type="button" data-v="mine" aria-pressed="true">Analyse et signaux</button>
-        <button type="button" data-v="tv" aria-pressed="false">TradingView Pepperstone</button>
+        <button type="button" data-v="tv" aria-pressed="false">TradingView</button>
       </div>
       <div class="legend"><span><i style="background:var(--ema20)"></i>EMA 20</span><span><i style="background:var(--ema50)"></i>EMA 50</span><span><i style="background:var(--ema200);height:3px"></i>EMA 200</span></div>
       <div class="toggles">
@@ -811,8 +811,10 @@ dialog .row-btns .left{margin-right:auto}
     </div>
     <div class="ctfoot">
       <button type="button" id="ctConnect">Se connecter à cTrader</button>
+      <button type="button" class="ghost" id="ctCatRefresh">Actualiser la liste des instruments</button>
       <span>Ces accès restent enregistrés dans ce navigateur, sur cet ordinateur. L'application ne fait que lire les prix : elle ne passe aucun ordre.</span>
     </div>
+    <p class="muted" id="ctCatInfo"></p>
   </div>
           </section>
           <section class="card">
@@ -895,6 +897,11 @@ dialog .row-btns .left{margin-right:auto}
     <p>Les zones viennent des 200 dernières bougies de l'unité affichée. Chaque sommet ou creux local (où le prix s'est retourné) est un point de réaction ; il compte davantage s'il s'est formé avec un fort volume, une longue mèche de rejet, ou récemment. Les points proches (moins de 0,35 ATR) sont regroupés en zones, renforcées par le volume échangé à ces prix. Une zone au-dessus du prix est vendeuse (les vendeurs y sont intervenus), une zone en dessous est acheteuse. Le profil de volume, à droite du graphique, montre combien a été échangé à chaque prix ; la barre dorée marque le prix le plus échangé.</p>
     <p>L'afflux de volume compare le volume de la dernière minute à la moyenne par minute des deux dernières heures. À partir de 3 fois la normale, une alerte se déclenche, avec la part d'acheteurs et de vendeurs et ce que cela peut annoncer selon les zones proches et la tendance. Sur le graphique, les ronds dorés marquent les bougies à volume exceptionnel (plus de 2,5 fois la moyenne) ; « Absorption » signale un gros volume sur une petite bougie, souvent signe qu'un gros intervenant absorbe les ordres d'en face.</p>
     <p>Ces zones sont déduites de là où le marché a réellement réagi, pas des ordres en attente : pour voir les ordres posés dans le carnet, ouvre la vue Liquidité. Elles indiquent des endroits à surveiller, pas des niveaux garantis.</p>
+  </details>
+  <details>
+    <summary>Analyser d'autres instruments de mon compte cTrader</summary>
+    <p>Une fois tes accès cTrader enregistrés dans les réglages, la liste des marchés en haut de l'écran se complète avec tous les instruments de ton compte, groupés par catégorie : forex, métaux, indices, énergie, cryptomonnaies, actions… Choisis-en un et toute l'application l'analyse avec les prix de ton broker : score, zones, graphique, carte de liquidité, footprint en ticks et calcul du risque. Les prix s'affichent avec le nombre de décimales de ton broker (5 pour EUR/USD, 3 pour USD/JPY…). La liste est mise à jour automatiquement une fois par jour ; le bouton « Actualiser la liste des instruments » des réglages la recharge tout de suite.</p>
+    <p>Deux réglages restent à vérifier pour chaque nouvel instrument. Dans « Calcul du risque », renseigne la valeur d'un point pour un lot, que l'application ne peut pas deviner pour tous les contrats. Et le graphique TradingView choisit lui-même sa cotation pour ce symbole : elle peut différer légèrement de celle de ton broker, l'analyse de l'application restant basée sur les prix cTrader.</p>
   </details>
   <details>
     <summary>Comment lire la carte de liquidité</summary>
@@ -1049,7 +1056,9 @@ const TFS = [
   { id: "4h",  name: "4 h",    w: 3,   bn: "4h",  td: "4h"    },
 ];
 const $ = id => document.getElementById(id);
-const fmt = (x, d = 2) => x == null ? "—" : x.toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
+let PD = 2; /* nombre de décimales des prix de l'instrument affiché */
+const fmt = (x, d = PD) => x == null ? "—" : x.toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
+const decOf = x => { for (let d = 0; d < 8; d++) if (Math.abs(Math.round(x * 10 ** d) - x * 10 ** d) < 1e-6) return d; return 8; };
 let timer = null, busy = false, ws = null, wsRetry = 0, wsTimer = null, dirty = false, lastTick = 0;
 const candles = {}, errors = {};
 
@@ -1065,7 +1074,58 @@ const INSTR = {
     qqq: { label: "QQQ, ETF Nasdaq 100, Twelve Data (clé gratuite)", kind: "twelve", sym: "QQQ", desc: "ETF QQQ (réplique le Nasdaq 100), données Twelve Data", unit: "$ par part QQQ", u: "$" },
     ndx: { label: "Indice NDX, Twelve Data (clé payante)", kind: "twelve", sym: "NDX", desc: "Indice Nasdaq 100, données Twelve Data", unit: "points", u: "pts" } } },
 };
-let inst = store("inst"); if (!INSTR[inst]) inst = "gold";
+/* Instruments du compte cTrader : liste mise en cache sur cet appareil, instruments créés à la demande */
+const escH = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function ctCatLoad() { try { const c = JSON.parse(store("ct-cat") || "null"); return c && Array.isArray(c.list) ? c : null; } catch { return null; } }
+function ensureInstr(key) {
+  if (INSTR[key]) return true;
+  if (!key || !String(key).startsWith("ct:")) return false;
+  const n = String(key).slice(3), cat = ctCatLoad(), m = (cat && cat.list.find(x => x.n === n)) || {};
+  const index = /indic|index/i.test((m.a || "") + " " + (m.c || ""));
+  const q = m.q || (/^[A-Z]{6}$/.test(n) ? n.slice(3) : "");
+  const u = index || !q ? "pts" : q;
+  INSTR[key] = { name: n, tv: n, dyn: true, desc: m.d || "", group: m.a || m.c || "",
+    sources: { ctrader: { label: n + ", mon compte cTrader (temps réel)", kind: "ctrader", sym: n, desc: "", unit: u === "pts" ? "points" : u, u } } };
+  return true;
+}
+const instName = k => INSTR[k] ? INSTR[k].name : String(k || "").replace(/^ct:/, "");
+const GROUP_FR = [[/crypto/i, "Cryptomonnaies"], [/forex|\bfx\b|currenc/i, "Forex"], [/metal/i, "Métaux"], [/indic|index/i, "Indices"], [/energ|oil/i, "Énergie"], [/commod|soft|agri/i, "Matières premières"], [/etf/i, "ETF"], [/stock|share|equit/i, "Actions"], [/bond/i, "Obligations"]];
+const GROUP_ORDER = ["Forex", "Métaux", "Indices", "Énergie", "Matières premières", "Cryptomonnaies", "Actions", "ETF", "Obligations"];
+function groupFr(g) { for (const [rx, fr] of GROUP_FR) if (rx.test(g)) return fr; return g || "Autres"; }
+function fillInstruments() {
+  const sel = $("instrument"), cat = ctCatLoad(), fixed = new Set(Object.values(CT_CANDIDATES).flat());
+  let h = '<optgroup label="Suivis par défaut"><option value="gold">XAU/USD</option><option value="nasdaq">Nasdaq 100</option></optgroup>';
+  let shown = false;
+  if (cat && cat.list.length) {
+    const groups = new Map();
+    for (const x of cat.list) {
+      if (fixed.has(String(x.n).toUpperCase())) continue;
+      const g = groupFr(x.a || x.c); if (!groups.has(g)) groups.set(g, []); groups.get(g).push(x);
+    }
+    const order = GROUP_ORDER;
+    const keys = [...groups.keys()].sort((a, b) => ((order.indexOf(a) + 1) || 99) - ((order.indexOf(b) + 1) || 99) || a.localeCompare(b, "fr"));
+    for (const g of keys) {
+      const arr = groups.get(g).sort((a, b) => a.n.localeCompare(b.n, "fr"));
+      h += '<optgroup label="' + escH(g) + ' (cTrader, ' + arr.length + ')">' + arr.map(x => { if ("ct:" + x.n === inst) shown = true; return '<option value="ct:' + escH(x.n) + '"' + (x.d ? ' title="' + escH(x.d) + '"' : "") + ">" + escH(x.n) + "</option>"; }).join("") + "</optgroup>";
+    }
+  }
+  if (String(inst).startsWith("ct:") && !shown) h += '<optgroup label="cTrader"><option value="' + escH(inst) + '">' + escH(instName(inst)) + "</option></optgroup>";
+  sel.innerHTML = h; sel.value = inst;
+  const info = $("ctCatInfo");
+  if (info) info.textContent = cat ? cat.list.length + " instruments de ton compte cTrader dans la liste des marchés (mise à jour le " + new Date(cat.t).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) + ")." : "Connecte-toi à cTrader pour ajouter tous les instruments de ton compte à la liste des marchés.";
+}
+function setPD(d) {
+  PD = Math.max(0, Math.min(6, Math.round(Number(d)))); if (!isFinite(PD)) PD = 2;
+  try { if (cs) cs.applyOptions({ priceFormat: { type: "price", precision: PD, minMove: Math.pow(10, -PD) } }); } catch {}
+}
+function guessPD() {
+  if (curSrc().kind !== "ctrader") return 2;
+  const n = INSTR[inst].dyn ? INSTR[inst].name : ct.symbolName || curSrc().sym, saved = Number(store("ct-dig-" + n));
+  if (saved >= 0 && store("ct-dig-" + n) != null) return saved;
+  if (!INSTR[inst].dyn) return 2;
+  return /JPY$/.test(n) ? 3 : /^[A-Z]{6}$/.test(n) ? 5 : 2;
+}
+let inst = store("inst"); if (!INSTR[inst] && !ensureInstr(inst)) inst = "gold";
 function curSrc() { const S = INSTR[inst].sources; return S[$("source").value] || Object.values(S)[0]; }
 const U = () => curSrc().u;
 function fillSources() {
@@ -1092,11 +1152,14 @@ function resetData() {
   $("grid").innerHTML = ""; $("props").innerHTML = ""; $("propCtx").textContent = "En attente des données.";
 }
 function switchInstrument(v) {
+  if (!ensureInstr(v)) v = "gold";
   inst = v; store("inst", v);
+  if (![...$("instrument").options].some(o => o.value === v)) fillInstruments();
   $("instrument").value = v;
   document.title = INSTR[v].name + " | Boussole Trading";
-  $("tvName").textContent = "Données " + INSTR[v].name + " de Pepperstone";
-  fillSources(); resetData(); loadPlan(); setDir(dir);
+  $("tvName").textContent = "Données " + INSTR[v].name + (INSTR[v].dyn ? ", cotation choisie automatiquement" : " de Pepperstone");
+  fillSources(); setPD(guessPD()); resetData(); loadPlan(); setDir(dir);
+  if (typeof fillTradeInst === "function") fillTradeInst();
   if (typeof posLoad === "function") posLoad();
   if (typeof buildTv === "function") buildTv(true);
   if (typeof chartTheme === "function") chartTheme();
@@ -1340,13 +1403,13 @@ function ctConnect(c) {
     };
   });
 }
-async function ctEnsure() {
+async function ctEnsure(quiet) {
   const c = ctCfg();
   if (!c.clientId || !c.clientSecret || !c.token) throw new Error("Renseigne le Client ID, le client secret et le jeton d'accès cTrader (voir « Comment obtenir mes accès cTrader »).");
   const key = c.clientId + "|" + c.token + "|" + c.env + "|" + c.account;
   if (ct.ready && ct.cfgKey === key && ct.ws && ct.ws.readyState === 1) return;
   ctClose();
-  setStatus("Connexion à cTrader…");
+  if (!quiet) setStatus("Connexion à cTrader…");
   await ctConnect(c);
   const r = await ctSend(2149, { accessToken: c.token });
   const accs = (r.ctidTraderAccount || []).filter(a => !!a.isLive === (c.env === "live"));
@@ -1370,10 +1433,39 @@ async function ctResolveSymbol() {
   let s = list.find(x => up(x) === want) || (typed ? list.find(x => up(x).startsWith(want)) : null);
   if (!s && !typed) for (const cand of CT_CANDIDATES[inst] || []) { s = list.find(x => up(x) === cand) || list.find(x => up(x).startsWith(cand)); if (s) break; }
   if (!s) {
-    const near = list.filter(x => /XAU|GOLD|NAS|US100|USTEC|NDX/i.test(x.symbolName || "")).slice(0, 8).map(x => x.symbolName).join(", ");
+    const rx = INSTR[inst].dyn ? new RegExp(want.replace(/[^A-Z0-9]/g, "").slice(0, 3) || "^$", "i") : /XAU|GOLD|NAS|US100|USTEC|NDX/i;
+    const near = list.filter(x => rx.test(x.symbolName || "")).slice(0, 8).map(x => x.symbolName).join(", ");
     throw new Error("Symbole « " + want + " » introuvable sur ce compte." + (near ? " Symboles proches : " + near + "." : ""));
   }
   ct.symbolId = s.symbolId; ct.symbolName = s.symbolName;
+  /* nombre de décimales réel du symbole chez le broker */
+  try {
+    const d = await ctSend(2116, { ctidTraderAccountId: ct.account, symbolId: [Number(s.symbolId)] }, 15000), sy = (d.symbol || [])[0];
+    if (sy && sy.digits != null) { setPD(sy.digits); store("ct-dig-" + s.symbolName, String(sy.digits)); }
+  } catch {}
+  setTimeout(() => ctCatalogRefresh(false), 1500);
+}
+async function ctCatalogRefresh(force) {
+  const c = ctCfg();
+  if (!c.clientId || !c.clientSecret || !c.token || ct.catBusy) return;
+  const old = ctCatLoad();
+  if (!force && old && old.env === c.env && (!ct.account || old.acc === String(ct.account)) && Date.now() - old.t < 864e5) { fillInstruments(); return; }
+  ct.catBusy = true;
+  const info = $("ctCatInfo"); if (info && force) info.textContent = "Chargement des instruments de ton compte cTrader…";
+  try {
+    await ctEnsure(curSrc().kind !== "ctrader");
+    const A = { ctidTraderAccountId: ct.account };
+    if (ct.symAcc !== ct.account || !ct.symbols) { const r = await ctSend(2114, A); ct.symbols = (r.symbol || []).filter(x => x.enabled !== false); ct.symAcc = ct.account; }
+    const [cls, cats, assets] = await Promise.all([ctSend(2153, A, 20000).catch(() => ({})), ctSend(2160, A, 20000).catch(() => ({})), ctSend(2112, A, 20000).catch(() => ({}))]);
+    const clsN = new Map((cls.assetClass || []).map(x => [String(x.id), x.name || ""]));
+    const catM = new Map((cats.symbolCategory || []).map(x => [String(x.id), { n: x.name || "", a: clsN.get(String(x.assetClassId)) || "" }]));
+    const asN = new Map((assets.asset || []).map(x => [String(x.assetId), x.displayName || x.name || ""]));
+    const list = ct.symbols.filter(x => x.symbolName).map(x => { const k = catM.get(String(x.symbolCategoryId)) || {}; return { n: String(x.symbolName), d: x.description || "", c: k.n || "", a: k.a || "", q: asN.get(String(x.quoteAssetId)) || "" }; });
+    store("ct-cat", JSON.stringify({ env: c.env, acc: String(ct.account), t: Date.now(), list }));
+    fillInstruments();
+  } catch (e) {
+    if (info) info.textContent = "Impossible de charger la liste des instruments cTrader : " + e.message;
+  } finally { ct.catBusy = false; }
 }
 async function ctFetch(tf) {
   const to = Date.now(), base = { ctidTraderAccountId: ct.account, symbolId: Number(ct.symbolId), toTimestamp: to };
@@ -1416,6 +1508,10 @@ function ctInitUI() {
   $("ctAccount").addEventListener("change", () => { store("ct-acc", $("ctAccount").value); start(); });
   $("ctSymbol").addEventListener("change", () => { store("ct-sym-" + inst, $("ctSymbol").value.trim().toUpperCase()); resetData(); start(); });
   $("ctConnect").addEventListener("click", () => { ct.cfgKey = null; resetData(); start(); });
+  $("ctCatRefresh").addEventListener("click", () => ctCatalogRefresh(true));
+  fillInstruments();
+  /* liste des instruments : mise à jour discrète si des accès cTrader sont enregistrés */
+  setTimeout(() => { const c = ctCfg(); if (c.clientId && c.clientSecret && c.token && curSrc().kind !== "ctrader") ctCatalogRefresh(false); }, 4000);
 }
 
 
@@ -1472,7 +1568,7 @@ function posUI() {
   $("posImport").hidden = curSrc().kind !== "ctrader";
   if (!pos) { $("posBadge").dataset.level = "none"; $("posBadge").textContent = "Aucune position"; }
   else {
-    $("posSl").value = pos.sl.toFixed(2); $("posTp").value = pos.tp.toFixed(2);
+    $("posSl").value = pos.sl.toFixed(PD); $("posTp").value = pos.tp.toFixed(PD);
     $("posTf").innerHTML = TFS.map(t => '<option value="' + t.id + '"' + (t.id === pos.tf ? " selected" : "") + ">" + t.name + "</option>").join("");
   }
   const hist = JSON.parse(store("hist-" + inst) || "[]").slice(0, 5);
@@ -1548,7 +1644,7 @@ function evalPosition() {
   const icon = { ok: "✓", tip: "➜", warn: "!", exit: "✕", done: "★" };
   $("posChecks").innerHTML = C.map(c => '<li data-state="' + c.state + '"><i aria-hidden="true">' + icon[c.state] + "</i><div><b>" + c.label + "</b><span>" + c.detail + "</span></div>" +
     (c.label === "Le marché revient sur ton entrée" && d * (pos.sl - pos.entry) < 0 ? '<button type="button" class="ghost" data-trail="' + pos.entry + '">Stop à l\'entrée</button>' : "") + "</li>").join("");
-  $("posChecks").querySelectorAll("button[data-trail]").forEach(b => b.onclick = () => { pos.sl = parseFloat(b.dataset.trail); posSave(); $("posSl").value = pos.sl.toFixed(2); drawLines(); evalPosition(); });
+  $("posChecks").querySelectorAll("button[data-trail]").forEach(b => b.onclick = () => { pos.sl = parseFloat(b.dataset.trail); posSave(); $("posSl").value = pos.sl.toFixed(PD); drawLines(); evalPosition(); });
 
   /* Alerte quand la situation se dégrade */
   const n = LEVEL[level];
@@ -1911,7 +2007,7 @@ function evalStops(x) {
     "<div><b>" + c.name + (rec && c.key === rec.key ? ' <em>Recommandé</em>' : c.tight ? ' <em class="t">Trop serré</em>' : "") + "</b><span>" + c.why + "</span></div>" +
     "<dl><div><dt>Nouveau SL</dt><dd>" + fmt(c.price) + "</dd></div><div><dt>" + (c.lock >= 0 ? "Gain sécurisé" : "Risque restant") + "</dt><dd class=\"" + (c.lock >= 0 ? "p" : "n") + "\">" +
     (c.lock >= 0 ? "+" : "") + fmt(c.lock) + " " + U() + " (" + (c.lockR >= 0 ? "+" : "") + fmt(c.lockR, 1) + " R)</dd></div><div><dt>Marge</dt><dd>" + fmt(c.room, 1) + " ATR</dd></div></dl>" +
-    '<button type="button" class="' + (rec && c.key === rec.key ? "" : "ghost") + '" data-sl="' + c.price.toFixed(2) + '">Appliquer</button></li>');
+    '<button type="button" class="' + (rec && c.key === rec.key ? "" : "ghost") + '" data-sl="' + c.price.toFixed(PD) + '">Appliquer</button></li>');
   const html = '<h3>Sécuriser mes gains</h3><p class="stop-sum' + (rec ? " has" : "") + '">' + summary + "</p>" + (rows.length ? '<ul class="stops">' + rows.join("") + "</ul>" : "") +
     '<p class="muted">SL actuel : ' + fmt(S) + " (" + (d * (S - E) >= 0 ? "+" : "") + fmt(d * (S - E) / risk, 1) + " R). Appliquer déplace le stop dans l'application ; pense à le modifier aussi chez ton broker, car l'application ne passe aucun ordre.</p>";
   if (box.dataset.html !== html) { box.innerHTML = html; box.dataset.html = html; }
@@ -1920,7 +2016,7 @@ function stopsInitUI() {
   $("stopBox").addEventListener("click", e => {
     const b = e.target.closest("button[data-sl]"); if (!b || !pos) return;
     pos.sl = parseFloat(b.dataset.sl); pos.noteSl = pos.sl; posSave();
-    $("posSl").value = pos.sl.toFixed(2); drawLines(); evalPosition(); queueOverlay();
+    $("posSl").value = pos.sl.toFixed(PD); drawLines(); evalPosition(); queueOverlay();
     $("posMsg").textContent = "";
   });
 }
@@ -2196,7 +2292,7 @@ function hmDraw() {
   const vr = book.base / book.zoom;
   if (book.vc == null || Math.abs(ref - book.vc) > vr * 0.6) book.vc = ref;
   const gr0 = Math.max(24, Math.floor(hh / (book.kind === "ctrader" ? 6 : 3)));
-  const step = Math.max(0.01, niceStep(2 * vr / gr0));
+  const step = Math.max(Math.pow(10, -PD), niceStep(2 * vr / gr0));
   const lo = Math.floor((book.vc - vr) / step) * step, gr = Math.max(1, Math.ceil((book.vc + vr - lo) / step)), span = gr * step;
   const Y = p => hh - (p - lo) / span * hh;
   const off = gw - cols.length, cw = HM.colW, heatW = gw * cw;
@@ -2243,7 +2339,7 @@ function hmDraw() {
 
   /* lignes de prix, prix suivi et transactions */
   c.save(); c.beginPath(); c.rect(0, 0, heatW, hh); c.clip();
-  const ls = niceStep(span / 8), dec = step < 1 ? 2 : 1;
+  const ls = niceStep(span / 8), dec = Math.max(PD, decOf(step));
   c.fillStyle = "rgba(255,255,255,.07)";
   for (let p = Math.ceil(lo / ls) * ls; p <= lo + span; p += ls) c.fillRect(0, Math.round(Y(p)), heatW, 1);
   c.lineWidth = 1.6; c.strokeStyle = "rgba(255,255,255,.92)"; c.lineJoin = "round"; c.beginPath();
@@ -2359,7 +2455,7 @@ function hmLadder(end, u) {
     const tag = r >= 1.5 ? ' <span class="tag ok">×' + fmt(r, 1) + "</span>" : r <= 0.5 ? ' <span class="tag off">×' + fmt(r, 1) + "</span>" : "";
     return "<td>" + hmSize(q) + " " + u + tag + "</td>";
   };
-  const n = Math.max(bl.length, al.length), dec = 2;
+  const n = Math.max(bl.length, al.length), dec = PD;
   let rows = "";
   for (let i = 0; i < n; i++) {
     const B = bl[i], A = al[i];
@@ -2384,7 +2480,7 @@ function hmWallList(cur, end, u) {
   const since = w => { let j = end - 1; const stop = Math.max(0, end - 600); while (j > stop && sizeAt(book.cols[j - 1], w) >= w.s * 0.5) j--; return cur.t - book.cols[j].t; };
   const line = w => {
     const a = w.i * ws, b = a + ws, near = w.side > 0 ? b : a, dist = Math.abs(near - mid), age = since(w);
-    return '<li class="' + (w.side > 0 ? "buy" : "sell") + '"><b>' + fmt(a, 2) + " à " + fmt(b, 2) + "</b><span>" + hmSize(w.s) + " " + u + "</span><span>" + fmt(dist, 2) + " " + U() + (w.side > 0 ? " sous le prix" : " au-dessus") + "</span><span>" + (age < book.colMs * 2 ? "à l'instant" : "depuis " + hmAgo(age)) + "</span></li>";
+    return '<li class="' + (w.side > 0 ? "buy" : "sell") + '"><b>' + fmt(a) + " à " + fmt(b) + "</b><span>" + hmSize(w.s) + " " + u + "</span><span>" + fmt(dist) + " " + U() + (w.side > 0 ? " sous le prix" : " au-dessus") + "</span><span>" + (age < book.colMs * 2 ? "à l'instant" : "depuis " + hmAgo(age)) + "</span></li>";
   };
   const sells = pickSide(-1).sort((a, b) => b.i - a.i), buys = pickSide(1).sort((a, b) => b.i - a.i);
   const head = '<li class="head"><span>Prix</span><span>Quantité</span><span>Distance</span><span>Présence</span></li>';
@@ -2412,7 +2508,7 @@ function hmImbalance(cur) {
 const FP_TF = { "1m": 6e4, "5m": 3e5, "15m": 9e5, "30m": 18e5, "1h": 36e5 };
 const FP_TFNAME = { "1m": "1 min", "5m": "5 min", "15m": "15 min", "30m": "30 min", "1h": "1 h" };
 const FP_HIST = { "1m": 3, "5m": 10, "15m": 24, "30m": 48, "1h": 96 }; /* heures d'historique visées */
-const FP_ROWS = [0.01, 0.02, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 25];
+const fpRows = () => [1, 2, 5, 10, 25, 50, 100, 250, 500, 1000, 2500].map(m => +(m * Math.pow(10, -PD)).toFixed(PD + 1));
 const FP_W = [44, 70, 110, 150, 200];
 const FP = { axisW: 74, headH: 22, sumH: 40, cdH: 78, maxTrades: 400000, maxReq: 220 };
 const fp = { kind: null, sym: null, gen: 0, tr: [], seq: 0, lastId: -1, oldestId: null, oldestT: null, reqs: 0,
@@ -2424,7 +2520,7 @@ let fpCv = null, fpCtx = null, fpDims = null;
 const fpVisible = () => { const v = $("view-footprint"); return !!v && !v.hidden && !document.hidden; };
 const fpRow = () => fp.rowSel === "auto" ? fp.autoRow : Number(fp.rowSel);
 const fpKey = () => fp.tf + "|" + fpRow() + "|" + fp.ratio + "|" + fp.ver;
-const fpDec = r => r >= 10 ? 0 : r >= 1 ? (Number.isInteger(r) ? 0 : 1) : 2;
+const fpDec = r => Math.max(decOf(r), Math.min(PD, 2));
 function fpNum(v) { const a = Math.abs(v); return a >= 1e6 ? fmt(v / 1e6, 1) + "M" : a >= 1e4 ? fmt(v / 1e3, 1) + "k" : fmt(v, a >= 100 || fp.kind === "ctrader" ? 0 : a >= 10 ? 1 : 2); }
 function fpSigned(v) { return (v > 0 ? "+" : v < 0 ? "−" : "") + fpNum(Math.abs(v)); }
 function fpSchedule() { if (!fp.timer) fp.timer = setTimeout(() => { fp.timer = 0; fpDraw(); fpSummary(); }, 200); }
@@ -2612,7 +2708,7 @@ function fpRebuild() {
     for (const r of tr) { const b = Math.floor(r[1] / ms) * ms; if (b !== t) { if (t != null) rng.push(hi - lo); t = b; lo = hi = r[2]; } else { if (r[2] < lo) lo = r[2]; if (r[2] > hi) hi = r[2]; } }
     if (t != null) rng.push(hi - lo);
     const last = rng.slice(-60).filter(x => x > 0).sort((a, b) => a - b), med = last.length ? last[Math.floor(last.length / 2)] : 0;
-    fp.autoRow = med ? Math.max(0.01, FP_ROWS.find(x => x >= med / 14) || 25) : 0.1;
+    const R = fpRows(); fp.autoRow = med ? R.find(x => x >= med / 14) || R[R.length - 1] : R[3];
     fpFillRows();
   }
   const list = [];
@@ -2622,7 +2718,7 @@ function fpRebuild() {
 function fpFillRows() {
   const sel = $("fpRow"); if (!sel) return;
   const cur = fp.rowSel;
-  sel.innerHTML = '<option value="auto">Auto (' + fmt(fp.autoRow, fpDec(fp.autoRow)) + ")</option>" + FP_ROWS.map(x => '<option value="' + x + '">' + fmt(x, fpDec(x)) + "</option>").join("");
+  sel.innerHTML = '<option value="auto">Auto (' + fmt(fp.autoRow, fpDec(fp.autoRow)) + ")</option>" + fpRows().map(x => '<option value="' + x + '">' + fmt(x, fpDec(x)) + "</option>").join("");
   sel.value = cur;
 }
 
@@ -2839,7 +2935,7 @@ function fpDraw() {
   c.fillStyle = "#0E1828"; c.fillRect(ax, 0, W - ax, H);
   c.font = "11px Archivo, system-ui, sans-serif"; c.fillStyle = "#AEB8C8";
   for (let k = kLo; k <= kHi; k++) if (k % lblEvery === 0) { const y = YK(k) + rh / 2; if (y > top + 6 && y < top + ph - 6) c.fillText(fmt(k * row, dec), ax + 6, y); }
-  if (yNow > top && yNow < top + ph) { c.fillStyle = "#E0B23C"; c.fillRect(ax + 2, yNow - 9, W - ax - 4, 18); c.fillStyle = "#14213A"; c.font = "600 11px Archivo, system-ui, sans-serif"; c.fillText(fmt(cur.c, 2), ax + 6, yNow); }
+  if (yNow > top && yNow < top + ph) { c.fillStyle = "#E0B23C"; c.fillRect(ax + 2, yNow - 9, W - ax - 4, 18); c.fillStyle = "#14213A"; c.font = "600 11px Archivo, system-ui, sans-serif"; c.fillText(fmt(cur.c), ax + 6, yNow); }
   c.font = "11px Archivo, system-ui, sans-serif"; c.fillStyle = "#AEB8C8";
   c.fillText("Volume", ax + 6, sumY + 9); c.fillText("Delta", ax + 6, sumY + 29);
   c.fillText(fpSigned(cum[end - 1]), ax + 6, CY(cum[end - 1]));
@@ -2864,7 +2960,7 @@ function fpTip() {
     if (k.imbS.has(kk)) html += "<br>Déséquilibre vendeur : ventes ≥ " + fmt(fp.ratio * 100, 0) + " % des achats du prix au-dessus";
     if (kk === k.poc) html += "<br>Prix le plus échangé de la bougie";
   } else {
-    html = "<b>Bougie de " + hmClock(k.t) + " (" + FP_TFNAME[fp.tf] + ")</b><br>Ouverture " + fmt(k.o, 2) + ", plus haut " + fmt(k.h, 2) + ", plus bas " + fmt(k.l, 2) + ", clôture " + fmt(k.c, 2) +
+    html = "<b>Bougie de " + hmClock(k.t) + " (" + FP_TFNAME[fp.tf] + ")</b><br>Ouverture " + fmt(k.o) + ", plus haut " + fmt(k.h) + ", plus bas " + fmt(k.l) + ", clôture " + fmt(k.c) +
       "<br>Volume : " + fpNum(v) + u + " (" + (v ? Math.round(k.buy / v * 100) : 50) + " % d'achats)<br>Delta : " + fpSigned(dl) + u + ", entre " + fpSigned(k.dmin) + " et " + fpSigned(k.dmax) + " pendant la bougie<br>Delta cumulé : " + fpSigned(d.cum[i]) + u;
     for (const s of k.sig || []) html += "<br><b>" + s.type + "</b>";
   }
@@ -2908,7 +3004,7 @@ function fpSummary() {
 let startQueued = false;
 async function start() {
   if (busy) { startQueued = true; return; }
-  clearInterval(timer); stopLive(); bookStop();
+  clearInterval(timer); stopLive(); bookStop(); setPD(guessPD());
   const src = curSrc().kind;
   const rt = src === "binance" || src === "ctrader";
   $("autoText").textContent = rt ? "Temps réel" : "Actualisation auto (10 min)";
@@ -2973,7 +3069,7 @@ function initChart() {
     if (bd) { const i = arr.findIndex(x => toTime(x.t) === p.time); if (i >= 0) { b = arr[i]; prev = arr[i - 1]; } }
     legend(b, prev);
   });
-  cs = chart.addCandlestickSeries({ priceFormat: { type: "price", precision: 2, minMove: 0.01 } });
+  cs = chart.addCandlestickSeries({ priceFormat: { type: "price", precision: PD, minMove: Math.pow(10, -PD) } });
   const lineOpt = w => ({ lineWidth: w, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
   emaS.e20 = chart.addLineSeries(lineOpt(1)); emaS.e50 = chart.addLineSeries(lineOpt(1)); emaS.e200 = chart.addLineSeries(lineOpt(2));
   initVolume();
@@ -3066,9 +3162,9 @@ function suggest() {
   if (d) { setDir(d); msg.textContent = (d > 0 ? "Achat" : "Vente") + " proposé dans le sens de la tendance, stop à " + $("atrm").value.replace(".", ",") + " ATR (" + fmt(A) + " " + U() + ")."; }
   else msg.textContent = "Pas de tendance claire : niveaux calculés pour le sens sélectionné, à prendre avec prudence.";
   const risk = A * parseFloat($("atrm").value), rr = parseFloat($("rr").value);
-  $("entry").value = px.toFixed(2);
-  $("sl").value = (px - dir * risk).toFixed(2);
-  $("tp").value = (px + dir * risk * rr).toFixed(2);
+  $("entry").value = px.toFixed(PD);
+  $("sl").value = (px - dir * risk).toFixed(PD);
+  $("tp").value = (px + dir * risk * rr).toFixed(PD);
   savePlan(); drawLines();
 }
 function savePlan() { store("plan-" + inst, JSON.stringify({ dir, entry: $("entry").value, sl: $("sl").value, tp: $("tp").value, rr: $("rr").value, atrm: $("atrm").value })); }
@@ -3224,7 +3320,7 @@ function buildProposals(arr) {
     '<button type="button" data-k="' + k + '">Placer sur le graphique</button></article>').join("");
   box.querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
     const p = P[+b.dataset.k];
-    setDir(p.dir); $("entry").value = p.entry.toFixed(2); $("sl").value = p.sl.toFixed(2); $("tp").value = p.tp.toFixed(2);
+    setDir(p.dir); $("entry").value = p.entry.toFixed(PD); $("sl").value = p.sl.toFixed(PD); $("tp").value = p.tp.toFixed(PD);
     $("planMsg").textContent = "« " + p.name + " » placé sur le graphique."; savePlan(); drawLines();
   }));
   if ($("showSig").checked) for (const p of P)
@@ -3307,6 +3403,12 @@ start();
    calcul du risque, réglages et équipe (s'exécute après le moteur)
    ===================================================================== */
 const ME = window.__ME;
+function fillTradeInst() {
+  const f = $("tradeForm"); if (!f) return; const cur = f.minst.value;
+  const keys = ["gold", "nasdaq"].concat(inst !== "gold" && inst !== "nasdaq" ? [inst] : []);
+  f.minst.innerHTML = keys.map(k => '<option value="' + escH(k) + '">' + escH(instName(k)) + "</option>").join("");
+  if (keys.includes(cur)) f.minst.value = cur;
+}
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 async function api(path, opts = {}) {
   const o = Object.assign({ headers: {} }, opts);
@@ -3438,7 +3540,7 @@ function renderDay() {
   $("dayBias").innerHTML = "<b>" + esc(INSTR[inst].name) + "</b> : " + (b >= 40 ? "biais acheteur" : b <= -40 ? "biais vendeur" : b >= 15 ? "légèrement haussier" : b <= -15 ? "légèrement baissier" : "pas de direction claire") + ' <span class="' + pn(b) + '">(' + (b > 0 ? "+" : "") + b + ")</span>";
   $("dayPos").innerHTML = pos ? "Position en cours : <b>" + (pos.dir > 0 ? "achat" : "vente") + "</b> à " + fmt(pos.entry) + ', <span class="pos-mini" data-level="' + ($("posBadge").dataset.level || "") + '">' + esc($("posBadge").textContent) + "</span>" : "Aucune position en cours.";
   const last = today.trades.slice(0, 5);
-  $("dayTrades").innerHTML = last.length ? last.map(t => '<li><span>' + new Date(t.closed_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) + "</span><b>" + (t.dir > 0 ? "Achat" : "Vente") + " " + esc(INSTR[t.instrument] ? INSTR[t.instrument].name : t.instrument || "") + '</b><em class="' + pn(t.r) + '">' + fmtR(t.r) + "</em></li>").join("") : '<li class="empty">Aucun trade clôturé aujourd\'hui.</li>';
+  $("dayTrades").innerHTML = last.length ? last.map(t => '<li><span>' + new Date(t.closed_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) + "</span><b>" + (t.dir > 0 ? "Achat" : "Vente") + " " + esc(instName(t.instrument)) + '</b><em class="' + pn(t.r) + '">' + fmtR(t.r) + "</em></li>").join("") : '<li class="empty">Aucun trade clôturé aujourd\'hui.</li>';
 }
 
 /* ---------- checklist et plan du jour ---------- */
@@ -3514,7 +3616,7 @@ function renderJournal() {
   $("jSetups").innerHTML = Object.keys(by).length ? "<table><thead><tr><th>Configuration</th><th>Trades</th><th>Réussite</th><th>Total</th></tr></thead><tbody>" + Object.entries(by).sort((a, b) => b[1].reduce((x, y) => x + y, 0) - a[1].reduce((x, y) => x + y, 0)).map(([k, v]) => { const s = v.reduce((a, b) => a + b, 0); return "<tr><td>" + esc(k) + "</td><td>" + v.length + "</td><td>" + fmt(v.filter(r => r > 0).length / v.length * 100, 0) + ' %</td><td class="' + pn(s) + '">' + fmtR(s) + "</td></tr>"; }).join("") + "</tbody></table>" : "";
   /* liste */
   $("jTable").innerHTML = T.length ? '<table class="trades"><thead><tr><th>Date</th><th>Marché</th><th>Sens</th><th>Entrée</th><th>Sortie</th><th>Résultat</th><th>Configuration</th><th>Émotion</th><th>Règles</th><th>Notes</th><th></th></tr></thead><tbody>' + T.map(t =>
-    "<tr><td>" + new Date(t.closed_at).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) + "</td><td>" + esc(INSTR[t.instrument] ? INSTR[t.instrument].name : t.instrument || "") + '</td><td class="' + (t.dir > 0 ? "p" : "n") + '">' + (t.dir > 0 ? "Achat" : "Vente") + "</td><td>" + fmt(t.entry) + "</td><td>" + (t.exit == null ? "—" : fmt(t.exit)) + '</td><td class="' + pn(t.r) + '"><b>' + fmtR(t.r) + "</b></td><td>" + esc(t.setup || "—") + "</td><td>" + esc(t.emotion || "—") + "</td><td>" + (t.rules_ok == null ? "—" : t.rules_ok ? '<span class="p">Oui</span>' : '<span class="n">Non</span>') + '</td><td class="note">' + esc((t.notes || "").slice(0, 80)) + '</td><td class="act"><button type="button" class="ghost sm" data-edit="' + t.id + '">Modifier</button></td></tr>').join("") + "</tbody></table>"
+    "<tr><td>" + new Date(t.closed_at).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) + "</td><td>" + esc(instName(t.instrument)) + '</td><td class="' + (t.dir > 0 ? "p" : "n") + '">' + (t.dir > 0 ? "Achat" : "Vente") + "</td><td>" + fmt(t.entry) + "</td><td>" + (t.exit == null ? "—" : fmt(t.exit)) + '</td><td class="' + pn(t.r) + '"><b>' + fmtR(t.r) + "</b></td><td>" + esc(t.setup || "—") + "</td><td>" + esc(t.emotion || "—") + "</td><td>" + (t.rules_ok == null ? "—" : t.rules_ok ? '<span class="p">Oui</span>' : '<span class="n">Non</span>') + '</td><td class="note">' + esc((t.notes || "").slice(0, 80)) + '</td><td class="act"><button type="button" class="ghost sm" data-edit="' + t.id + '">Modifier</button></td></tr>').join("") + "</tbody></table>"
     : '<div class="empty-state"><b>Aucun trade sur cette période.</b><p>Clôture une position depuis la vue Position, ou ajoute un trade fait ailleurs avec « Ajouter un trade ».</p></div>';
 }
 function csvExport() {
@@ -3531,7 +3633,7 @@ function openTradeDlg(t, mode) {
   dlgTrade = Object.assign({}, t); const f = $("tradeForm");
   $("tdTitle").textContent = mode === "close" ? "Position clôturée : ton bilan" : mode === "new" ? "Ajouter un trade" : "Modifier le trade";
   $("tdManual").hidden = mode !== "new"; $("tdDelete").hidden = mode !== "edit";
-  $("tdSummary").innerHTML = mode === "new" ? "" : (t.dir > 0 ? "Achat" : "Vente") + " " + esc(INSTR[t.instrument] ? INSTR[t.instrument].name : t.instrument || "") + " à " + fmt(t.entry) + ", sortie à " + (t.exit == null ? "—" : fmt(t.exit)) + ' : <b class="' + pn(t.r) + '">' + fmtR(t.r) + "</b>";
+  $("tdSummary").innerHTML = mode === "new" ? "" : (t.dir > 0 ? "Achat" : "Vente") + " " + esc(instName(t.instrument)) + " à " + fmt(t.entry) + ", sortie à " + (t.exit == null ? "—" : fmt(t.exit)) + ' : <b class="' + pn(t.r) + '">' + fmtR(t.r) + "</b>";
   f.setup.value = t.setup || ""; f.emotion.value = t.emotion || ""; f.notes.value = t.notes || "";
   f.rules.value = t.rules_ok == null ? "" : t.rules_ok ? "1" : "0";
   if (mode === "new") { f.minst.value = inst; f.mdir.value = "1"; f.mentry.value = ""; f.mexit.value = ""; f.msl.value = ""; f.mdate.value = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16); }
@@ -3569,8 +3671,8 @@ function calcRisk() {
   const money = cap * pct / 100, dist = Math.abs(en - sl), perLot = dist * pv, raw = money / perLot, lots = Math.floor(raw / step + 1e-9) * step;
   const loss = lots * perLot, gain = tp > 0 ? lots * Math.abs(tp - en) * pv : null, ratio = tp > 0 ? Math.abs(tp - en) / dist : null;
   out.innerHTML = '<div class="rk-main"><span>Taille de position</span><b>' + (lots > 0 ? fmt(lots, step < 0.1 ? 2 : 1) + " lot" + (lots >= 2 ? "s" : "") : "Trop petite") + "</b><small>" + (lots > 0 ? "Calculé : " + fmt(raw, 3) + " lot, arrondi à l'inférieur au pas de " + String(step).replace(".", ",") : "Le stop est trop large pour ce risque : réduis la distance du stop ou augmente le risque.") + "</small></div>" +
-    '<dl class="rk-grid"><div><dt>Montant risqué</dt><dd>' + fmt(money) + "</dd></div><div><dt>Distance du stop</dt><dd>" + fmt(dist) + " " + U() + "</dd></div>" +
-    '<div><dt>Perte si le stop est touché</dt><dd class="n">−' + fmt(loss) + "</dd></div>" + (gain != null ? '<div><dt>Gain si l\'objectif est atteint</dt><dd class="p">+' + fmt(gain) + "</dd></div><div><dt>Ratio</dt><dd>1 : " + fmt(ratio, 1) + "</dd></div>" : "") + "</dl>" +
+    '<dl class="rk-grid"><div><dt>Montant risqué</dt><dd>' + fmt(money, 2) + "</dd></div><div><dt>Distance du stop</dt><dd>" + fmt(dist) + " " + U() + "</dd></div>" +
+    '<div><dt>Perte si le stop est touché</dt><dd class="n">−' + fmt(loss, 2) + "</dd></div>" + (gain != null ? '<div><dt>Gain si l\'objectif est atteint</dt><dd class="p">+' + fmt(gain, 2) + "</dd></div><div><dt>Ratio</dt><dd>1 : " + fmt(ratio, 1) + "</dd></div>" : "") + "</dl>" +
     (pct > 2 ? '<p class="warnline">Risquer plus de 2 % par trade expose à des pertes rapides en cas de série perdante. 0,5 à 1 % est une base plus prudente.</p>' : "");
 }
 function initRisk() {
@@ -3584,7 +3686,7 @@ function initRisk() {
   $("rkFill").addEventListener("click", () => {
     const src = pos ? { e: pos.entry, s: pos.sl, t: pos.tp } : { e: num("entry"), s: num("sl"), t: num("tp") };
     if (src.e == null || src.s == null) { $("rkMsg").textContent = "Ton plan de trade est vide : prépare une entrée dans la vue Graphique, ou saisis les prix ici."; return; }
-    $("rkEntry").value = src.e.toFixed(2); $("rkSl").value = src.s.toFixed(2); $("rkTp").value = src.t != null ? src.t.toFixed(2) : ""; $("rkMsg").textContent = ""; calcRisk();
+    $("rkEntry").value = src.e.toFixed(PD); $("rkSl").value = src.s.toFixed(PD); $("rkTp").value = src.t != null ? src.t.toFixed(PD) : ""; $("rkMsg").textContent = ""; calcRisk();
   });
 }
 
@@ -3691,7 +3793,7 @@ function initShell() {
   $("tdDelete").addEventListener("click", async () => { if (!dlgTrade.id || !confirm("Supprimer ce trade du journal ?")) return; try { await api("/api/trades/" + dlgTrade.id, { method: "DELETE" }); $("tradeDlg").close(); loadJournal(); loadToday(); } catch (e) { $("tdErr").textContent = e.message; } });
   $("tradeForm").setup.innerHTML = '<option value="">Choisir</option>' + SETUPS.map(s => "<option>" + s + "</option>").join("");
   $("tradeForm").emotion.innerHTML = '<option value="">Choisir</option>' + EMOTIONS.map(s => "<option>" + s + "</option>").join("");
-  $("tradeForm").minst.innerHTML = Object.entries(INSTR).map(([k, v]) => '<option value="' + k + '">' + v.name + "</option>").join("");
+  fillTradeInst();
   /* confirmation si la limite du jour est atteinte */
   $("posFromPlan").addEventListener("click", e => {
     const s = dayStatus(); if (!s.stop) return;
