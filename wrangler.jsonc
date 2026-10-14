@@ -10,11 +10,10 @@
     "run_worker_first": true
   },
 
-  // Base de données D1 : retire les deux barres « // » devant les lignes ci-dessous
-  // et colle l'identifiant (Database ID) de ta base bossole_trading.
-  // "d1_databases": [
-  //   { "binding": "DB", "database_name": "bossole_trading", "database_id": "COLLE_ICI_L_ID_DE_LA_BASE" }
-  // ],
+  // Base de données D1 des comptes, des données et des journaux des traders
+  "d1_databases": [
+    { "binding": "DB", "database_name": "bossole_trading", "database_id": "626fcd49-7d55-4cf4-99ce-4cd2afea2911" }
+  ],
 
   "observability": { "enabled": true }
 }
