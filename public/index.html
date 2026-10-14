@@ -452,8 +452,76 @@ dialog .row-btns .left{margin-right:auto}
 .fp-now dt{font-size:12px;color:var(--mute)} .fp-now dd{margin:2px 0 0;font-weight:650;font-size:15px}
 .fp-now dd.p{color:var(--bull)} .fp-now dd.n{color:var(--bear)}
 @media (max-width:560px){.fp-wrap{height:520px}}
+/* ----- Scanner ----- */
+.sc-tbl{width:100%;border-collapse:collapse;font-size:14px}
+.sc-tbl th{text-align:left;font-size:12px;color:var(--mute);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.sc-tbl td{padding:10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.sc-tbl tbody tr{cursor:pointer}
+.sc-tbl tbody tr:hover{background:color-mix(in srgb,var(--gold) 8%,transparent)}
+.sc-tbl tr.err td,.sc-tbl tr.wait td{white-space:normal}
+.sc-tbl .warn{color:var(--gold);font-weight:650}
+.sc-q{display:inline-block;vertical-align:middle;width:70px;height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin-right:6px}
+.sc-q span{display:block;height:100%;background:var(--flat)}
+.sc-q span.up{background:var(--bull)} .sc-q span.dn{background:var(--bear)}
+.sc-dots{display:inline-flex;gap:4px}
+.sc-dots i{width:10px;height:10px;border-radius:50%;background:var(--line);display:inline-block}
+.sc-dots i.up{background:var(--bull)} .sc-dots i.dn{background:var(--bear)} .sc-dots i.fl{background:var(--flat)}
+.sc-legend{margin:12px 0 0}
+.sc-chips{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 12px}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:4px 4px 4px 12px;border:1px solid var(--line);border-radius:999px;font-weight:600;font-size:13px}
+.chip button{border:0;background:transparent;color:var(--mute);font-size:16px;line-height:1;padding:2px 8px;min-height:0;cursor:pointer}
+.chip button:hover{color:var(--bear)}
+.sc-add{display:flex;gap:8px;max-width:460px}
+.sc-add input{flex:1}
+/* ----- Fiabilité des signaux ----- */
+.bt-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px 16px;align-items:end}
+.bt-form label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--mute);font-weight:600}
+.bt-verdict,.prop-msg{margin:16px 0 8px;padding:12px 16px;border-radius:10px;border-left:5px solid var(--flat);background:var(--panel);font-weight:600}
+.bt-verdict[data-level=ok],.prop-msg[data-level=ok]{border-left-color:var(--bull)}
+.bt-verdict[data-level=warn],.prop-msg[data-level=warn]{border-left-color:var(--gold)}
+.bt-verdict[data-level=stop],.prop-msg[data-level=stop]{border-left-color:var(--bear)}
+.bt-h{margin:20px 0 10px;font-size:16px}
+#btOut .card,#view-performance .card{margin-top:16px}
+.bt-key{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--mute)}
+.bt-key i{display:inline-block;width:16px;height:3px;border-radius:2px;margin-left:8px}
+.bt-key .k1{background:var(--gold)} .bt-key .k2{background:var(--flat)}
+svg.eq{width:100%;height:200px;display:block}
+svg.eq path{fill:none;stroke-width:2}
+svg.eq path.main{stroke:var(--gold)} svg.eq path.alt{stroke:var(--flat);stroke-dasharray:4 4}
+svg.eq path.dd{stroke:var(--bear)}
+svg.eq .zero{stroke:var(--line);stroke-width:1}
+.dd-h{font-size:12px;color:var(--mute);margin:10px 0 2px}
+#pfCurve svg.eq:last-child{height:80px}
+.bt-notes p{font-size:14px;color:var(--mute)}
+/* ----- Performance ----- */
+.pf-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}
+@media (max-width:980px){.pf-grid{grid-template-columns:minmax(0,1fr)}}
+.pf-grid>.card{min-width:0;overflow-x:auto}
+#propForm .form-grid>label{min-width:0}
+#propForm select,#propForm input:not([type=checkbox]){width:100%;min-width:0;max-width:100%}
+.pf-grid table,.pf-t{width:100%;border-collapse:collapse;font-size:14px}
+.pf-grid th{text-align:left;font-size:12px;color:var(--mute);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line)}
+.pf-grid td{padding:7px 8px;border-bottom:1px solid var(--line)}
+.mbar{display:inline-block;height:8px;border-radius:4px;margin-right:6px;vertical-align:middle}
+.mbar.p{background:var(--bull)} .mbar.n{background:var(--bear)}
+.pf-insights{margin-top:16px}
+.pf-insights ul{margin:0;padding-left:20px} .pf-insights li{margin:6px 0}
+.coach-text{margin-top:12px}
+.coach-text h4{margin:18px 0 6px;font-size:15px}
+.coach-text p,.coach-text li{line-height:1.55}
+/* ----- Prop firm ----- */
+.prop-card{margin-top:16px}
+.prop-row{display:grid;grid-template-columns:130px 1fr minmax(160px,auto);gap:12px;align-items:center;margin:10px 0;font-size:14px}
+.prop-bar{height:10px;border-radius:5px;background:var(--line);overflow:hidden}
+.prop-bar i{display:block;height:100%;background:var(--bull)}
+.prop-bar.warn i{background:var(--gold)} .prop-bar.stop i{background:var(--bear)}
+.prop-bar.goal i{background:var(--gold)}
+.prop-src{margin:10px 0 0;font-size:12px}
+.prop-risk{margin:12px 0 0;padding:10px 12px;border-radius:8px;border-left:4px solid var(--bull);background:color-mix(in srgb,var(--panel) 80%,var(--line))}
+.prop-risk[data-level=warn]{border-left-color:var(--gold)} .prop-risk[data-level=stop]{border-left-color:var(--bear)}
+@media (max-width:560px){.prop-row{grid-template-columns:1fr}.sc-add{max-width:none}}
 /* ----- Mobile ----- */
-@media (max-width:1100px){.day-grid,.j-grid,.rk,.set-grid{grid-template-columns:1fr}}
+@media (max-width:1100px){.day-grid,.j-grid,.rk,.set-grid{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:900px){
   .app{grid-template-columns:1fr}
   .rail{position:fixed;left:0;top:0;bottom:0;width:260px;transform:translateX(-100%);transition:transform .22s ease}
@@ -479,12 +547,15 @@ dialog .row-btns .left{margin-right:auto}
     <nav aria-label="Navigation principale">
       <button type="button" data-view="journee"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5 13 13l-4.5 2.5L11 11z"/></svg><span>Ma journée</span></button>
       <button type="button" data-view="marche"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Marché</span></button>
+      <button type="button" data-view="scanner"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5M8 11h6M11 8v6"/></svg><span>Scanner</span></button>
       <button type="button" data-view="graphique"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M17 6v12"/><rect x="5" y="8" width="4" height="7" rx="1"/><rect x="15" y="9" width="4" height="5" rx="1"/></svg><span>Graphique et entrées</span></button>
       <button type="button" data-view="liquidite"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h7M3 9h12M3 13h5M3 17h14M3 21h9"/><path d="M19 4v16"/></svg><span>Liquidité</span></button>
       <button type="button" data-view="footprint"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="7" height="18" rx="1.5"/><rect x="13" y="6" width="7" height="12" rx="1.5"/><path d="M4 9h7M4 15h7M13 10h7M13 14h7"/></svg><span>Footprint</span></button>
+      <button type="button" data-view="fiabilite"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V4M4 20h16"/><path d="M7 15l4-4 3 3 5-6"/></svg><span>Fiabilité des signaux</span></button>
       <button type="button" data-view="position"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.8"/></svg><span>Ma position</span><i class="dot" id="navPosDot"></i></button>
       <div class="sep"></div>
       <button type="button" data-view="journal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11M9 8h6"/></svg><span>Journal</span></button>
+      <button type="button" data-view="performance"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9"/><path d="M12 3v9l6 4"/></svg><span>Performance</span></button>
       <button type="button" data-view="risque"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6z"/><path d="M9 12h6"/></svg><span>Calcul du risque</span></button>
       <div class="sep"></div>
       <button type="button" data-view="reglages"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span>Réglages</span></button>
@@ -526,6 +597,7 @@ dialog .row-btns .left{margin-right:auto}
         <p class="admin-notice" id="adminNotice" hidden></p>
         <p class="day-verdict" id="dayVerdict" data-level="ok"></p>
         <div class="stats" id="dayStats"></div>
+        <section class="card prop-card" id="propCard" hidden></section>
         <div class="day-grid">
           <section class="card">
             <div class="card-h"><h3>Avant de trader</h3><span id="checkCount"></span></div>
@@ -720,6 +792,56 @@ dialog .row-btns .left{margin-right:auto}
         <p class="muted" id="fpQuality"></p>
       </div>
 
+      <div class="view" id="view-scanner" data-view="scanner" hidden>
+        <div class="vh"><div><h2>Scanner</h2><p>Tous tes marchés suivis, classés par qualité de configuration : alignement des unités de temps, signaux récents, zones proches et réveil de la volatilité. Clique sur une ligne pour l'analyser en détail.</p></div>
+          <div class="tools">
+            <label class="chk"><input type="checkbox" id="scAuto" checked> Actualiser toutes les 5 min</label>
+            <button type="button" id="scRun">Scanner maintenant</button>
+          </div></div>
+        <p class="status" id="scStatus"></p>
+        <section class="card"><div id="scTable" class="scroll"></div></section>
+        <section class="card">
+          <div class="card-h"><h3>Marchés suivis</h3><span class="muted" id="scCount" style="margin:0"></span></div>
+          <div class="sc-chips" id="scChips"></div>
+          <form class="sc-add" id="scAddForm"><input id="scAdd" list="scAddList" placeholder="Ajouter un instrument (ex. EURUSD)" aria-label="Ajouter un instrument au scanner" autocomplete="off"><datalist id="scAddList"></datalist><button type="submit" class="ghost">Ajouter</button></form>
+          <p class="muted">Les instruments de ton compte cTrader sont analysés avec les prix de ton broker. Le scanner lit 5 unités de temps par marché : compte quelques secondes par instrument.</p>
+        </section>
+      </div>
+
+      <div class="view" id="view-fiabilite" data-view="fiabilite" hidden>
+        <div class="vh"><div><h2>Fiabilité des signaux</h2><p>Les signaux de l'application rejoués sur l'historique de <b id="btInst"></b>, comme si tu les avais tous suivis : entrée à la clôture du signal, stop derrière le dernier creux ou sommet, objectif au ratio choisi.</p></div></div>
+        <section class="card">
+          <div class="bt-form">
+            <label>Unité de temps des signaux <select id="btTf"><option value="15m">15 min</option><option value="1h" selected>1 h</option><option value="4h">4 h</option></select></label>
+            <label>Ratio gain / risque <select id="btRr"><option value="1.5">1 : 1,5</option><option value="2" selected>1 : 2</option><option value="3">1 : 3</option></select></label>
+            <label>Filtre de tendance <select id="btMin"><option value="15" selected>Score ≥ 15 (règle de l'application)</option><option value="40">Score ≥ 40 (biais fort)</option></select></label>
+            <label>Historique <select id="btBars"><option value="1000">1 000 bougies</option><option value="2000" selected>2 000 bougies</option><option value="3000">3 000 bougies</option></select></label>
+            <label>Coût par trade (spread et commission) <input id="btCost" inputmode="decimal" placeholder="0"></label>
+            <div class="bt-go"><button type="button" id="btRun">Lancer le test</button></div>
+          </div>
+          <p class="status" id="btStatus"></p>
+        </section>
+        <div id="btOut"></div>
+      </div>
+
+      <div class="view" id="view-performance" data-view="performance" hidden>
+        <div class="vh"><div><h2>Performance</h2><p>Ce que disent tes trades : où tu gagnes, où tu perds, et dans quelles conditions. Tous les résultats sont en R, c'est-à-dire en multiples du montant risqué.</p></div>
+          <div class="tools">
+            <select id="pfPeriod" aria-label="Période"><option value="30">30 derniers jours</option><option value="90" selected>90 derniers jours</option><option value="365">12 derniers mois</option><option value="all">Depuis le début</option></select>
+            <select id="pfInst" aria-label="Marché"><option value="all">Tous les marchés</option></select>
+          </div></div>
+        <div class="stats" id="pfStats"></div>
+        <section class="card pf-insights"><h3>À retenir</h3><ul id="pfInsights"></ul></section>
+        <section class="card"><h3>Courbe des résultats et creux</h3><div id="pfCurve"></div></section>
+        <div class="pf-grid" id="pfTables"></div>
+        <section class="card coach">
+          <div class="card-h"><h3>Coach IA</h3><span class="muted" id="coachWhen" style="margin:0"></span></div>
+          <p class="muted">Le coach relit tes trades, tes notes et tes émotions, puis te propose un bilan et trois actions concrètes. Tes trades de la période sont envoyés <span id="coachProv">au service d'IA configuré</span> pour cette analyse.</p>
+          <div class="row-btns"><select id="coachDays" aria-label="Période du bilan"><option value="7">7 derniers jours</option><option value="30" selected>30 derniers jours</option><option value="90">90 derniers jours</option></select><button type="button" id="coachRun">Demander un bilan</button><span class="msg" id="coachMsg"></span></div>
+          <div class="coach-text" id="coachText"></div>
+        </section>
+      </div>
+
       <div class="view" id="view-position" data-view="position" hidden>
         <section class="pos" aria-label="Ma position">
     <div class="pos-head">
@@ -785,7 +907,7 @@ dialog .row-btns .left{margin-right:auto}
             </div>
             <div class="row-btns"><button type="button" class="ghost" id="rkFill">Reprendre mon plan ou ma position</button><span class="msg" id="rkMsg"></span></div>
           </section>
-          <section class="card"><h3>Résultat</h3><div id="rkOut"></div></section>
+          <section class="card"><h3>Résultat</h3><div id="rkOut"></div><p class="prop-risk" id="rkProp" hidden></p></section>
         </div>
       </div>
 
@@ -816,6 +938,31 @@ dialog .row-btns .left{margin-right:auto}
     </div>
     <p class="muted" id="ctCatInfo"></p>
   </div>
+          </section>
+          <section class="card">
+            <h3>Mode prop firm</h3>
+            <p class="muted" style="margin-top:-6px">Suis les limites de ton challenge ou de ton compte financé : perte journalière, perte maximale, objectif et jours de trading. Vérifie toujours les règles exactes de ta prop firm, elles changent selon les sociétés et les offres.</p>
+            <form id="propForm">
+              <label class="chk"><input type="checkbox" name="on"> Activer le suivi prop firm</label>
+              <div class="form-grid">
+                <label>Modèle <select name="preset">
+                  <option value="2p1">Challenge en 2 phases : phase 1</option><option value="2p2">Challenge en 2 phases : phase 2</option>
+                  <option value="1p">Challenge en 1 phase (perte maximale suiveuse)</option><option value="funded">Compte financé</option><option value="custom">Personnalisé</option></select></label>
+                <label>Capital initial <input name="capital" inputmode="decimal"></label>
+                <label>Perte journalière maximale (%) <input name="daily" inputmode="decimal"></label>
+                <label>Calculée sur <select name="dailyBase"><option value="initial">le capital initial</option><option value="start">le solde de début de journée</option></select></label>
+                <label>Perte maximale totale (%) <input name="maxLoss" inputmode="decimal"></label>
+                <label>Type de perte maximale <select name="maxType"><option value="static">Fixe (sous le capital initial)</option><option value="trailing">Suiveuse (sous le plus haut solde)</option></select></label>
+                <label>Objectif de profit (%) <input name="target" inputmode="decimal" placeholder="Aucun"></label>
+                <label>Jours de trading minimum <input name="minDays" inputmode="numeric" placeholder="Aucun"></label>
+                <label>Nouvelle journée à minuit <select name="tz"><option value="Europe/Prague">heure de Prague (FTMO et la plupart des prop firms)</option><option value="local">heure locale</option><option value="UTC">UTC</option><option value="America/New_York">heure de New York</option></select></label>
+                <label>Début du challenge <input name="start" type="date"></label>
+                <label>Suivi du solde <select name="src"><option value="ctrader">Mon compte cTrader (automatique)</option><option value="journal">Mon journal (résultats en R × montant risqué)</option><option value="manual">Saisie manuelle</option></select></label>
+                <label>Montant risqué par trade <input name="risk" inputmode="decimal"></label>
+                <label data-manual>Solde actuel <input name="manualBal" inputmode="decimal"></label>
+              </div>
+              <div class="row-btns"><button type="submit">Enregistrer</button><span class="msg" id="propMsg"></span></div>
+            </form>
           </section>
           <section class="card">
             <h3>Règles du jour</h3>
@@ -897,6 +1044,27 @@ dialog .row-btns .left{margin-right:auto}
     <p>Les zones viennent des 200 dernières bougies de l'unité affichée. Chaque sommet ou creux local (où le prix s'est retourné) est un point de réaction ; il compte davantage s'il s'est formé avec un fort volume, une longue mèche de rejet, ou récemment. Les points proches (moins de 0,35 ATR) sont regroupés en zones, renforcées par le volume échangé à ces prix. Une zone au-dessus du prix est vendeuse (les vendeurs y sont intervenus), une zone en dessous est acheteuse. Le profil de volume, à droite du graphique, montre combien a été échangé à chaque prix ; la barre dorée marque le prix le plus échangé.</p>
     <p>L'afflux de volume compare le volume de la dernière minute à la moyenne par minute des deux dernières heures. À partir de 3 fois la normale, une alerte se déclenche, avec la part d'acheteurs et de vendeurs et ce que cela peut annoncer selon les zones proches et la tendance. Sur le graphique, les ronds dorés marquent les bougies à volume exceptionnel (plus de 2,5 fois la moyenne) ; « Absorption » signale un gros volume sur une petite bougie, souvent signe qu'un gros intervenant absorbe les ordres d'en face.</p>
     <p>Ces zones sont déduites de là où le marché a réellement réagi, pas des ordres en attente : pour voir les ordres posés dans le carnet, ouvre la vue Liquidité. Elles indiquent des endroits à surveiller, pas des niveaux garantis.</p>
+  </details>
+  <details>
+    <summary>Le scanner multi-instruments</summary>
+    <p>Le scanner analyse tous tes marchés suivis sur les 5 unités de temps et les classe par qualité de configuration, de 0 à 100. La note monte quand les unités de temps sont alignées, quand un repli ou une cassure vient d'apparaître dans le sens de la tendance et quand une zone d'appui est proche. Elle baisse quand le prix bute sur une zone contraire. La colonne Volatilité compare l'ATR 1 h actuel à sa valeur habituelle : au-dessus de ×1,3, le marché se réveille.</p>
+    <p>Ajoute ou retire des marchés sous le tableau. Le scan se relance toutes les 5 minutes tant que la page est ouverte. Une note élevée signale un marché à regarder de près, pas une entrée automatique : clique sur la ligne pour vérifier l'analyse complète.</p>
+  </details>
+  <details>
+    <summary>La fiabilité des signaux</summary>
+    <p>Cette page rejoue les signaux de repli et de cassure de l'application sur l'historique du marché affiché, comme si tu les avais tous pris : entrée à la clôture du signal, stop derrière le dernier creux ou sommet, objectif au ratio choisi. Elle compare les signaux filtrés par la tendance, comme l'application te les propose, à tous les signaux sans filtre.</p>
+    <p>Pour juger, regarde d'abord le nombre de trades (en dessous de 30, on ne peut rien conclure), puis la moyenne par trade et le creux maximal. Un taux de réussite faible n'est pas un problème si les gains compensent : avec un ratio 1 : 2, il suffit de 34 % de réussite pour être à l'équilibre. Indique un coût par trade (écart de cotation et commission de ton broker) pour un résultat plus réaliste. Les résultats passés ne garantissent rien pour l'avenir.</p>
+  </details>
+  <details>
+    <summary>L'analyse de performance et le coach IA</summary>
+    <p>La page Performance découpe tes trades du journal par configuration, émotion, session, jour, marché, respect des règles, rang dans la journée et résultat du trade précédent. La section « À retenir » met en avant ton point fort et ce qui te coûte le plus, à partir d'un nombre minimal de trades pour éviter les conclusions hâtives. Plus tu renseignes la configuration et l'émotion de chaque trade, plus l'analyse est utile.</p>
+    <p>Le coach IA relit tes trades de la période choisie, tes notes et tes règles, puis rédige un bilan avec trois actions concrètes pour la semaine suivante. Un bilan peut être demandé toutes les 10 minutes.</p>
+    <p>Pour l'activer, l'administrateur ajoute dans Cloudflare, sur le Worker boussole-trading (Settings, puis Variables and Secrets), l'un de ces deux secrets. ANTHROPIC_API_KEY, une clé de l'API d'Anthropic : le bilan est rédigé par Claude, et tes trades sont envoyés à Anthropic. Ou OPENROUTER_API_KEY, une clé OpenRouter : tu peux alors choisir parmi des centaines de modèles avec la variable OPENROUTER_MODEL (par défaut anthropic/claude-sonnet-5.5), et tes trades transitent par OpenRouter puis par le fournisseur du modèle. Si les deux clés sont présentes, Anthropic est utilisé, sauf si la variable COACH_PROVIDER vaut openrouter. Dans les deux cas, l'utilisation est facturée par le service choisi selon le volume.</p>
+  </details>
+  <details>
+    <summary>Le mode prop firm</summary>
+    <p>Active-le dans les réglages et choisis un modèle de règles (challenge en 2 phases, en 1 phase, compte financé) ou des règles personnalisées. Les valeurs proposées sont courantes mais varient selon les prop firms : vérifie toujours les tiennes. La carte « Compte prop firm » de Ma journée affiche ce qu'il te reste à perdre aujourd'hui et au total, ta progression vers l'objectif et tes jours de trading. Quand une limite est atteinte, l'application te demande d'arrêter, comme pour tes règles du jour.</p>
+    <p>Le suivi le plus précis passe par ton compte cTrader : solde, positions ouvertes et résultats du jour sont lus directement. La journée commence à minuit à l'heure choisie (heure de Prague pour FTMO et beaucoup d'autres). Sans cTrader, le suivi peut se faire depuis ton journal (résultats en R multipliés par ton montant risqué) ou en saisissant ton solde à la main. Les commissions peuvent créer un léger écart avec les chiffres de ta prop firm, qui restent la référence.</p>
   </details>
   <details>
     <summary>Analyser d'autres instruments de mon compte cTrader</summary>
@@ -1111,6 +1279,7 @@ function fillInstruments() {
   }
   if (String(inst).startsWith("ct:") && !shown) h += '<optgroup label="cTrader"><option value="' + escH(inst) + '">' + escH(instName(inst)) + "</option></optgroup>";
   sel.innerHTML = h; sel.value = inst;
+  if (typeof scanCatalogChanged === "function") scanCatalogChanged();
   const info = $("ctCatInfo");
   if (info) info.textContent = cat ? cat.list.length + " instruments de ton compte cTrader dans la liste des marchés (mise à jour le " + new Date(cat.t).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) + ")." : "Connecte-toi à cTrader pour ajouter tous les instruments de ton compte à la liste des marchés.";
 }
@@ -3421,12 +3590,12 @@ async function api(path, opts = {}) {
 }
 const dayKey = (t = Date.now()) => { const d = new Date(t); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
 const startOfDay = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
-const fmtR = r => r == null ? "—" : (r > 0 ? "+" : "") + fmt(r, 1) + " R";
+const fmtR = r => r == null ? "—" : Math.round(r * 10) === 0 ? "0,0 R" : (r > 0 ? "+" : "") + fmt(r, 1) + " R";
 const pn = v => v > 0 ? "p" : v < 0 ? "n" : "";
 function rules() { try { return Object.assign({ maxLoss: 3, maxTrades: 5, riskPct: 1, capital: 10000 }, JSON.parse(store("rules") || "{}")); } catch { return { maxLoss: 3, maxTrades: 5, riskPct: 1, capital: 10000 }; } }
 
 /* ---------- navigation ---------- */
-const VIEWS = ["journee", "marche", "graphique", "liquidite", "footprint", "position", "journal", "risque", "reglages", "admin", "aide"];
+const VIEWS = ["journee", "marche", "graphique", "scanner", "liquidite", "footprint", "fiabilite", "position", "journal", "performance", "risque", "reglages", "admin", "aide"];
 function showView(v) {
   if (!VIEWS.includes(v) || (v === "admin" && ME.role !== "admin")) v = "journee";
   document.querySelectorAll(".view").forEach(s => s.hidden = s.dataset.view !== v);
@@ -3436,6 +3605,9 @@ function showView(v) {
   if (v === "liquidite") setTimeout(() => { hmResize(); hmSummary(); }, 30);
   if (v === "footprint") setTimeout(() => { fpResize(); fpSummary(); }, 30);
   if (v === "journal") loadJournal();
+  if (v === "performance") pfLoad();
+  if (v === "scanner") { scanChips(); if (!scan.at && !scan.busy) scanRun(); }
+  if (v === "fiabilite") $("btInst").textContent = INSTR[inst].name;
   if (v === "admin") loadUsers();
   if (v === "risque") calcRisk();
   if (v === "journee") { renderDay(); loadCalendar(); }
@@ -3518,7 +3690,8 @@ async function loadToday() {
 function dayStatus() {
   const R = rules(), t = today.trades, sum = t.reduce((a, x) => a + (x.r || 0), 0);
   const lossHit = sum <= -R.maxLoss, countHit = t.length >= R.maxTrades;
-  return { R, sum, n: t.length, wins: t.filter(x => x.r > 0).length, lossHit, countHit, stop: lossHit || countHit };
+  const P = typeof propEval === "function" ? propEval() : null, propHit = !!(P && P.breach);
+  return { R, sum, n: t.length, wins: t.filter(x => x.r > 0).length, lossHit, countHit, propHit, P, stop: lossHit || countHit || propHit };
 }
 function renderDay() {
   if (!$("dayStats")) return;
@@ -3531,7 +3704,8 @@ function renderDay() {
     '<div class="stat"><span>Perte maximale autorisée</span><b>' + fmt(R.maxLoss, 1) + ' R</b><div class="meter"><i style="width:' + lossPct + '%"></i></div><small>' + (s.sum < 0 ? fmt(-s.sum, 1) + " R utilisés" : "Aucune perte aujourd'hui") + "</small></div>" +
     '<div class="stat"><span>Trades autorisés</span><b>' + s.n + " / " + R.maxTrades + '</b><div class="meter"><i style="width:' + Math.min(100, s.n / R.maxTrades * 100) + '%"></i></div><small>' + (R.maxTrades - s.n > 0 ? "Encore " + (R.maxTrades - s.n) : "Plus aucun") + "</small></div>";
   const st = $("dayVerdict");
-  if (s.lossHit) { st.dataset.level = "stop"; st.textContent = "Limite de perte du jour atteinte. Arrête de trader aujourd'hui : la meilleure décision est de revenir demain avec la tête reposée."; }
+  if (s.propHit) { st.dataset.level = "stop"; st.textContent = "Limite de ta prop firm atteinte. Arrête de trader : voir le détail ci-dessous."; }
+  else if (s.lossHit) { st.dataset.level = "stop"; st.textContent = "Limite de perte du jour atteinte. Arrête de trader aujourd'hui : la meilleure décision est de revenir demain avec la tête reposée."; }
   else if (s.countHit) { st.dataset.level = "stop"; st.textContent = "Nombre maximal de trades atteint pour aujourd'hui. Analyse tes trades dans le journal plutôt que d'en ouvrir d'autres."; }
   else if (s.sum >= 2 * Math.max(1, R.maxLoss / 1.5)) { st.dataset.level = "good"; st.textContent = "Belle journée. Pense à protéger ce résultat : réduis ta taille ou arrête-toi là."; }
   else { st.dataset.level = "ok"; st.textContent = "Tu peux trader. Respecte ton plan et ta checklist avant chaque entrée."; }
@@ -3593,6 +3767,8 @@ const SETUPS = ["Repli EMA 20", "Cassure", "Rebond sur zone", "Rejet de zone", "
 async function loadJournal() {
   const per = $("jPeriod").value, from = per === "all" ? 0 : per === "today" ? startOfDay() : Date.now() - (+per) * 86400000;
   try { journal = await api("/api/trades?from=" + from); } catch (e) { $("jTable").innerHTML = '<p class="err">' + esc(e.message) + "</p>"; return; }
+  { const sel = $("jInst"), cur = sel.value, ks = [...new Set(["gold", "nasdaq"].concat(journal.map(t => t.instrument).filter(Boolean)))];
+    sel.innerHTML = '<option value="all">Tous les marchés</option>' + ks.map(k => '<option value="' + esc(k) + '">' + esc(instName(k)) + "</option>").join(""); sel.value = ks.includes(cur) ? cur : "all"; }
   renderJournal();
 }
 function renderJournal() {
@@ -3797,7 +3973,7 @@ function initShell() {
   /* confirmation si la limite du jour est atteinte */
   $("posFromPlan").addEventListener("click", e => {
     const s = dayStatus(); if (!s.stop) return;
-    if (!confirm((s.lossHit ? "Ta limite de perte du jour est atteinte." : "Tu as atteint ton nombre maximal de trades.") + " Veux-tu vraiment ouvrir une nouvelle position ?")) e.stopImmediatePropagation();
+    if (!confirm((s.propHit ? "La limite de ta prop firm est atteinte." : s.lossHit ? "Ta limite de perte du jour est atteinte." : "Tu as atteint ton nombre maximal de trades.") + " Veux-tu vraiment ouvrir une nouvelle position ?")) e.stopImmediatePropagation();
   }, true);
   if (ME.mustChange) {
     $("pwDlg").showModal();
@@ -3811,6 +3987,473 @@ function initShell() {
   loadToday();
   showView(store("view") || "journee");
 }
+/* =====================================================================
+   Outils du trader : scanner, fiabilité des signaux, performance, coach IA, prop firm
+   ===================================================================== */
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const TFMS = { "5m": 3e5, "15m": 9e5, "30m": 18e5, "1h": 36e5, "4h": 144e5 };
+const sessionOf = t => { const h = new Date(t).getUTCHours(); return h >= 22 || h < 7 ? "Asie" : h < 12 ? "Londres" : h < 16 ? "Londres et New York" : "New York"; };
+const JOURS = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+const dedupeBars = a => { const m = new Map(); for (const b of a) if (b && isFinite(b.c)) m.set(b.t, b); return [...m.values()].sort((x, y) => x.t - y.t); };
+const upTo = (arr, t) => { let lo = 0, hi = arr.length; while (lo < hi) { const m = (lo + hi) >> 1; if (arr[m].t <= t) lo = m + 1; else hi = m; } return lo; }; /* nombre de bougies ouvertes à t ou avant */
+const fmtMoney = v => (v < 0 ? "−" : "") + fmt(Math.abs(v), 2);
+function instPD(key) {
+  if (key === inst) return PD;
+  if (!INSTR[key] || !INSTR[key].dyn) return 2;
+  const n = INSTR[key].name, s = store("ct-dig-" + n);
+  return s != null && s !== "" ? Number(s) : /JPY$/.test(n) ? 3 : /^[A-Z]{6}$/.test(n) ? 5 : 2;
+}
+
+/* ----- bougies de n'importe quel instrument, sur plusieurs requêtes si besoin ----- */
+function srcFor(key) {
+  ensureInstr(key); const I = INSTR[key]; if (!I) throw new Error("Instrument inconnu.");
+  const saved = store("src-" + key); return (saved && I.sources[saved]) || Object.values(I.sources)[0];
+}
+async function ctSymbolIdFor(key) {
+  await ctEnsure(true);
+  if (ct.symAcc !== ct.account || !ct.symbols) { const r = await ctSend(2114, { ctidTraderAccountId: ct.account }); ct.symbols = (r.symbol || []).filter(x => x.enabled !== false); ct.symAcc = ct.account; }
+  const up = x => String(x.symbolName || "").toUpperCase(), typed = String(store("ct-sym-" + key) || "").toUpperCase(), want = typed || String(srcFor(key).sym).toUpperCase();
+  let s = ct.symbols.find(x => up(x) === want);
+  if (!s && !INSTR[key].dyn) for (const c of CT_CANDIDATES[key] || []) { s = ct.symbols.find(x => up(x) === c) || ct.symbols.find(x => up(x).startsWith(c)); if (s) break; }
+  if (!s) throw new Error("« " + want + " » introuvable sur ton compte cTrader.");
+  return Number(s.symbolId);
+}
+async function fetchBars(key, tfId, n) {
+  const S = srcFor(key), tf = TFS.find(t => t.id === tfId), ms = TFMS[tfId];
+  if (S.kind === "binance") {
+    let out = [], end = null;
+    for (let k = 0; k < 10 && out.length < n; k++) {
+      const r = await fetch("https://data-api.binance.vision/api/v3/klines?symbol=" + S.sym + "&interval=" + tf.bn + "&limit=1000" + (end ? "&endTime=" + end : ""));
+      if (!r.ok) throw new Error("Binance a répondu " + r.status + ".");
+      const j = await r.json(); if (!j.length) break;
+      out = j.map(b => ({ t: b[0], o: +b[1], h: +b[2], l: +b[3], c: +b[4], v: +b[5] })).concat(out);
+      end = j[0][0] - 1;
+    }
+    return dedupeBars(out).slice(-n);
+  }
+  if (S.kind === "twelve") {
+    const k2 = $("key").value.trim(); if (!k2) throw new Error("Clé Twelve Data manquante.");
+    const r = await fetch("https://api.twelvedata.com/time_series?symbol=" + encodeURIComponent(S.sym) + "&interval=" + tf.td + "&outputsize=" + Math.min(5000, n) + "&timezone=UTC&apikey=" + encodeURIComponent(k2));
+    const j = await r.json(); if (j.status !== "ok") throw new Error(j.message || "Erreur Twelve Data.");
+    return j.values.reverse().map(b => ({ t: Date.parse(b.datetime.replace(" ", "T") + "Z"), o: +b.open, h: +b.high, l: +b.low, c: +b.close, v: b.volume != null ? +b.volume : undefined }));
+  }
+  const id = await ctSymbolIdFor(key), span = Math.max(ms * 280, 864e5);
+  let out = [], to = Date.now(), empty = 0;
+  for (let k = 0; k < Math.ceil(n / 200) + 6 && out.length < n && empty < 4; k++) {
+    const r = await ctSend(2137, { ctidTraderAccountId: ct.account, symbolId: id, period: CT_PERIOD[tfId], fromTimestamp: Math.round(to - span), toTimestamp: Math.round(to) });
+    const bars = (r.trendbar || []).map(b => { const lo = Number(b.low); return { t: Number(b.utcTimestampInMinutes) * 6e4, o: (lo + Number(b.deltaOpen || 0)) / 1e5, h: (lo + Number(b.deltaHigh || 0)) / 1e5, l: lo / 1e5, c: (lo + Number(b.deltaClose || 0)) / 1e5, v: Number(b.volume || 0) }; });
+    if (!bars.length) { empty++; to -= span; }
+    else { empty = 0; out = bars.concat(out); to = Math.min(...bars.map(b => b.t)) - 1; }
+    await sleep(220); /* cTrader limite les demandes d'historique à quelques-unes par seconde */
+  }
+  if (!out.length) throw new Error("Aucune bougie reçue de cTrader.");
+  return dedupeBars(out).slice(-n);
+}
+
+/* =====================  Scanner  ===================== */
+const scan = { list: [], res: new Map(), busy: false, at: 0, timer: null };
+function scanDefault() {
+  const cat = ctCatLoad(), names = new Set(cat ? cat.list.map(x => x.n) : []);
+  return ["gold", "nasdaq"].concat(["EURUSD", "GBPUSD", "USDJPY", "US30", "GER40", "BTCUSD", "XAGUSD", "USOIL"].filter(n => names.has(n)).map(n => "ct:" + n)).slice(0, 10);
+}
+function scanLoad() { try { const l = JSON.parse(store("scan-list") || "null"); if (Array.isArray(l) && l.length) return l.filter(k => ensureInstr(k)); } catch {} return scanDefault(); }
+function scanSave() { store("scan-list", JSON.stringify(scan.list)); }
+function scanCatalogChanged() {
+  if (!$("scChips")) return;
+  if (!store("scan-list")) { const d = scanDefault(); if (d.join() !== scan.list.join()) { scan.list = d; scanRender(); } }
+  scanChips();
+}
+async function scanOne(key) {
+  const bars = {};
+  for (const tf of TFS) bars[tf.id] = await fetchBars(key, tf.id, 300);
+  const per = TFS.map(tf => ({ tf, a: bars[tf.id] && bars[tf.id].length > 211 ? analyse(bars[tf.id]) : null }));
+  let sum = 0, w = 0, up = 0, dn = 0;
+  for (const { tf, a } of per) if (a) { sum += a.score * tf.w; w += tf.w; if (a.raw >= 2) up++; if (a.raw <= -2) dn++; }
+  if (!w) throw new Error("Historique insuffisant.");
+  const g = Math.round(sum / w * 100), d = Math.abs(g) >= 15 ? Math.sign(g) : 0, h1 = bars["1h"], m15 = bars["15m"], px = h1[h1.length - 1].c;
+  const ref = h1[Math.max(0, h1.length - 25)].c, chg = (px - ref) / ref * 100;
+  const as = atrSeries(h1).filter(x => x != null), last = as.slice(-100).sort((a, b) => a - b), vol = last.length ? as[as.length - 1] / last[Math.floor(last.length / 2)] : 1;
+  let zone = null; const Z = computeZones(h1);
+  if (Z && Z.zones) { const z = Z.zones.filter(z => z.side !== "mid").sort((a, b) => a.dist - b.dist)[0]; if (z) zone = { side: z.side, strength: z.strength || "", atr: Math.max(0, z.dist) / Z.A }; }
+  const recent = (arr, tfn, maxAgo) => { const s = findSignals(arr).filter(s => arr.length - 1 - s.i <= maxAgo).pop(); return s ? Object.assign({ tfn, ago: arr.length - 1 - s.i }, s) : null; };
+  const sigs = [recent(h1, "1 h", 3), recent(m15, "15 min", 4)].filter(Boolean), sig = sigs.find(s => d && s.dir === d) || sigs[0] || null;
+  const align = d > 0 ? up : d < 0 ? dn : 0, zWith = zone && zone.atr <= 1 && ((d > 0 && zone.side === "buy") || (d < 0 && zone.side === "sell")), zAgainst = zone && zone.atr <= 0.5 && ((d > 0 && zone.side === "sell") || (d < 0 && zone.side === "buy"));
+  let q = Math.min(55, Math.abs(g) * 0.6) + align * 5 + (sig && d && sig.dir === d ? 15 : 0) + (zWith ? 8 : 0) - (zAgainst ? 15 : 0) + (vol >= 1.3 ? 4 : 0);
+  if (!d) q = Math.min(q, 25);
+  const why = [];
+  if (d) why.push((d > 0 ? "Tendance haussière" : "Tendance baissière") + " sur " + align + " unité" + (align > 1 ? "s" : "") + " de temps sur 5");
+  else why.push("Unités de temps contradictoires");
+  if (sig) why.push((sig.type === "pb" ? "repli" : "cassure") + " " + (sig.dir > 0 ? "acheteur" : "vendeur") + " en " + sig.tfn + (sig.ago ? " il y a " + sig.ago + " bougie" + (sig.ago > 1 ? "s" : "") : " sur la dernière bougie"));
+  if (zAgainst) why.push("bute sur une zone " + (zone.side === "sell" ? "vendeuse" : "acheteuse") + " toute proche");
+  else if (zWith) why.push("appui sur une zone " + (zone.side === "buy" ? "acheteuse" : "vendeuse") + " proche");
+  if (vol >= 1.3) why.push("volatilité en hausse");
+  return { key, g, d, up, dn, per, px, chg, vol, zone, sig, q: Math.max(0, Math.min(100, Math.round(q))), why: why.join(", ") + "." };
+}
+async function scanRun() {
+  if (scan.busy) return; scan.busy = true; $("scRun").disabled = true;
+  const keys = scan.list.slice();
+  for (let i = 0; i < keys.length; i++) {
+    $("scStatus").textContent = "Analyse de " + instName(keys[i]) + " (" + (i + 1) + " sur " + keys.length + ")…"; $("scStatus").className = "status";
+    try { scan.res.set(keys[i], await scanOne(keys[i])); } catch (e) { scan.res.set(keys[i], { key: keys[i], err: e.message }); }
+    scanRender();
+  }
+  scan.at = Date.now(); scan.busy = false; $("scRun").disabled = false;
+  const errs = keys.filter(k => scan.res.get(k) && scan.res.get(k).err).length;
+  $("scStatus").textContent = "Dernier scan à " + new Date(scan.at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) + (errs ? ", " + errs + " marché" + (errs > 1 ? "s" : "") + " non analysé" + (errs > 1 ? "s" : "") + " (voir la ligne)." : ".");
+}
+function scanRender() {
+  const rows = scan.list.map(k => scan.res.get(k) || { key: k, wait: true });
+  rows.sort((a, b) => (a.err || a.wait ? -1 : a.q) > (b.err || b.wait ? -1 : b.q) ? -1 : 1);
+  const dots = r => r.per.map(({ tf, a }) => '<i class="' + (!a ? "" : a.raw >= 2 ? "up" : a.raw <= -2 ? "dn" : "fl") + '" title="' + tf.name + " : " + (a ? a.label : "indisponible") + '"></i>').join("");
+  $("scTable").innerHTML = '<table class="sc-tbl"><thead><tr><th>Marché</th><th>Qualité</th><th>Score</th><th>Unités de temps</th><th>Prix</th><th>24 h</th><th>Signal récent</th><th>Zone la plus proche</th><th>Volatilité</th></tr></thead><tbody>' +
+    rows.map(r => {
+      const nm = '<td><b>' + esc(instName(r.key)) + "</b></td>";
+      if (r.wait) return '<tr class="wait" data-k="' + esc(r.key) + '">' + nm + '<td colspan="8" class="muted">En attente du scan</td></tr>';
+      if (r.err) return '<tr class="err" data-k="' + esc(r.key) + '">' + nm + '<td colspan="8" class="muted">' + esc(r.err) + "</td></tr>";
+      const pd = instPD(r.key);
+      return '<tr data-k="' + esc(r.key) + '" title="' + esc(r.why) + '">' + nm +
+        '<td><div class="sc-q"><span style="width:' + r.q + '%" class="' + (r.d > 0 ? "up" : r.d < 0 ? "dn" : "") + '"></span></div><small>' + r.q + "</small></td>" +
+        '<td class="' + pn(r.g) + '"><b>' + (r.g > 0 ? "+" : "") + r.g + "</b></td>" +
+        '<td><span class="sc-dots">' + dots(r) + "</span></td>" +
+        "<td>" + fmt(r.px, pd) + "</td>" +
+        '<td class="' + pn(r.chg) + '">' + (r.chg > 0 ? "+" : "") + fmt(r.chg, 2) + " %</td>" +
+        "<td>" + (r.sig ? '<span class="' + (r.sig.dir > 0 ? "p" : "n") + '">' + (r.sig.type === "pb" ? "Repli" : "Cassure") + " " + r.sig.tfn + "</span>" + (r.sig.ago ? ' <small class="muted">il y a ' + r.sig.ago + "</small>" : ' <small class="muted">maintenant</small>') : '<span class="muted">—</span>') + "</td>" +
+        "<td>" + (r.zone ? '<span class="' + (r.zone.side === "buy" ? "p" : "n") + '">' + (r.zone.side === "buy" ? "Acheteuse" : "Vendeuse") + " " + esc(r.zone.strength) + "</span> <small class=\"muted\">" + (r.zone.atr < 0.05 ? "dedans" : "à " + fmt(r.zone.atr, 1) + " ATR") + "</small>" : '<span class="muted">—</span>') + "</td>" +
+        '<td class="' + (r.vol >= 1.3 ? "warn" : "") + '">×' + fmt(r.vol, 1) + "</td></tr>";
+    }).join("") + "</tbody></table>" +
+    '<p class="muted sc-legend">Qualité sur 100 : alignement des unités de temps, signal récent dans le sens de la tendance, zone d\'appui proche, et pénalité si le prix bute sur une zone contraire. Volatilité : ATR 1 h actuel rapporté à sa médiane des 100 dernières heures. Survole une ligne pour le détail, clique pour l\'analyser.</p>';
+  $("scTable").querySelectorAll("tr[data-k]").forEach(tr => tr.addEventListener("click", () => { const k = tr.dataset.k; switchInstrument(k); start(); showView("marche"); }));
+}
+function scanChips() {
+  $("scChips").innerHTML = scan.list.map(k => '<span class="chip">' + esc(instName(k)) + '<button type="button" data-k="' + esc(k) + '" aria-label="Retirer ' + esc(instName(k)) + ' du scanner">×</button></span>').join("");
+  $("scChips").querySelectorAll("button").forEach(b => b.addEventListener("click", () => { scan.list = scan.list.filter(k => k !== b.dataset.k); scan.res.delete(b.dataset.k); scanSave(); scanChips(); scanRender(); }));
+  $("scCount").textContent = scan.list.length + " marché" + (scan.list.length > 1 ? "s" : "");
+  const cat = ctCatLoad();
+  $("scAddList").innerHTML = ["XAU/USD", "Nasdaq 100"].concat(cat ? cat.list.map(x => x.n) : []).map(n => '<option value="' + escH(n) + '">').join("");
+}
+function scanAdd(v) {
+  v = String(v || "").trim(); if (!v) return;
+  const up = v.toUpperCase(), cat = ctCatLoad();
+  let key = up === "XAU/USD" || up === "GOLD" ? "gold" : up === "NASDAQ 100" || up === "NASDAQ" ? "nasdaq" : null;
+  if (!key) { const m = cat && cat.list.find(x => x.n.toUpperCase() === up); key = m ? "ct:" + m.n : /^[A-Z0-9._]{3,20}$/.test(up) ? "ct:" + up : null; }
+  if (!key || !ensureInstr(key)) { $("scStatus").textContent = "Instrument « " + v + " » inconnu."; $("scStatus").className = "status err"; return; }
+  if (!scan.list.includes(key)) { scan.list.push(key); scanSave(); scanChips(); scanRender(); }
+  $("scAdd").value = "";
+  if (!scan.busy) scanOneUpdate(key);
+}
+async function scanOneUpdate(key) {
+  scan.busy = true; $("scRun").disabled = true; $("scStatus").textContent = "Analyse de " + instName(key) + "…"; $("scStatus").className = "status";
+  try { scan.res.set(key, await scanOne(key)); } catch (e) { scan.res.set(key, { key, err: e.message }); }
+  scan.busy = false; $("scRun").disabled = false; $("scStatus").textContent = ""; scanRender();
+}
+
+/* =====================  Fiabilité des signaux (rejeu historique)  ===================== */
+function rStats(T) {
+  const rs = T.map(t => t.R), wins = rs.filter(r => r > 0), losses = rs.filter(r => r <= 0);
+  const gp = wins.reduce((a, b) => a + b, 0), gl = -losses.reduce((a, b) => a + b, 0);
+  let eq = 0, peak = 0, dd = 0, st = 0, worst = 0; const curve = [0];
+  for (const r of rs) { eq += r; curve.push(eq); peak = Math.max(peak, eq); dd = Math.max(dd, peak - eq); st = r <= 0 ? st + 1 : 0; worst = Math.max(worst, st); }
+  return { n: rs.length, win: rs.length ? wins.length / rs.length * 100 : 0, avg: rs.length ? eq / rs.length : 0, tot: eq, pf: gl ? gp / gl : wins.length ? Infinity : 0, dd, worst, curve };
+}
+function curveSvg(series, opts = {}) {
+  const W = 800, H = opts.h || 200, all = series.flatMap(s => s.pts).concat([0]), mn = Math.min(...all), mx = Math.max(...all), sp = (mx - mn) || 1;
+  const Y = v => H - 10 - (v - mn) / sp * (H - 20);
+  return '<svg class="eq" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" role="img" aria-label="' + (opts.label || "Courbe des résultats") + '"><line x1="0" x2="' + W + '" y1="' + Y(0) + '" y2="' + Y(0) + '" class="zero"/>' +
+    series.map(s => { const n = s.pts.length - 1 || 1; return '<path d="' + s.pts.map((v, i) => (i ? "L" : "M") + (i / n * W).toFixed(1) + " " + Y(v).toFixed(1)).join(" ") + '" class="' + (s.cls || "") + '" vector-effect="non-scaling-stroke"/>'; }).join("") + "</svg>";
+}
+async function btRun() {
+  const key = inst, tfId = $("btTf").value, rr = +$("btRr").value, minG = +$("btMin").value, N = +$("btBars").value;
+  const cost = Math.max(0, parseFloat(String($("btCost").value || "0").replace(",", ".")) || 0);
+  const st = (t, err) => { $("btStatus").textContent = t; $("btStatus").className = "status" + (err ? " err" : ""); };
+  const idx = TFS.findIndex(t => t.id === tfId), higher = TFS.slice(idx), msT = TFMS[tfId];
+  $("btRun").disabled = true; $("btOut").innerHTML = "";
+  try {
+    const data = {};
+    for (const tf of higher) {
+      st("Chargement de l'historique " + tf.name + "…");
+      data[tf.id] = await fetchBars(key, tf.id, tf.id === tfId ? N : Math.ceil(N * msT / TFMS[tf.id]) + 320);
+      if (key !== inst) return;
+    }
+    const arr = data[tfId], L = arr.length - 1;
+    if (arr.length < 450) throw new Error("Historique trop court (" + arr.length + " bougies) : il en faut au moins 450 pour un test utile.");
+    st("Rejeu des signaux…"); await sleep(20);
+    const A = atrSeries(arr), sigs = findSignals(arr);
+    const biasAt = i => {
+      const tc = arr[i].t + msT; let sum = 0, w = 0;
+      for (const tf of higher) {
+        const b = data[tf.id], hi = upTo(b, tc - TFMS[tf.id]); if (hi < 212) continue;
+        const a = analyse(b.slice(Math.max(0, hi - 300), hi)); if (a) { sum += a.score * tf.w; w += tf.w; }
+      }
+      return w ? Math.round(sum / w * 100) : null;
+    };
+    const sim = s => {
+      const i = s.i, d = s.dir, e = arr[i].c, a = A[i]; if (!a) return null;
+      const win = arr.slice(Math.max(0, i - 5), i + 1);
+      let sl = d > 0 ? Math.min(...win.map(b => b.l)) - 0.2 * a : Math.max(...win.map(b => b.h)) + 0.2 * a;
+      if (Math.abs(e - sl) < 0.5 * a) sl = e - d * 0.5 * a;
+      const risk = Math.abs(e - sl), tp = e + d * rr * risk, c = cost / risk, end = Math.min(L - 1, i + 100);
+      for (let j = i + 1; j <= end; j++) {
+        const b = arr[j];
+        if (d > 0 ? b.l <= sl : b.h >= sl) return { s, t: arr[i].t, exitI: j, R: -1 - c, how: "stop" };
+        if (d > 0 ? b.h >= tp : b.l <= tp) return { s, t: arr[i].t, exitI: j, R: rr - c, how: "objectif" };
+      }
+      if (i + 100 <= L - 1) return { s, t: arr[i].t, exitI: i + 100, R: d * (arr[i + 100].c - e) / risk - c, how: "temps" };
+      return null;
+    };
+    const all = [], filt = []; let oA = -1, oF = -1;
+    for (const s of sigs) {
+      const g = biasAt(s.i), d = g != null && Math.abs(g) >= minG ? Math.sign(g) : 0;
+      if (s.i > oA) { const t = sim(s); if (t) { all.push(t); oA = t.exitI; } }
+      if (d && d === s.dir && s.i > oF) { const t = sim(s); if (t) { filt.push(Object.assign({ g }, t)); oF = t.exitI; } }
+    }
+    btRender({ key, tfId, rr, minG, cost, arr, all, filt });
+    st("");
+  } catch (e) { st(e.message === "Failed to fetch" ? "Connexion impossible pour charger l'historique." : e.message, true); }
+  finally { $("btRun").disabled = false; }
+}
+function btRender(o) {
+  const F = rStats(o.filt), Al = rStats(o.all), tfn = TFS.find(t => t.id === o.tfId).name;
+  const from = new Date(o.arr[202].t), to = new Date(o.arr[o.arr.length - 1].t), dfmt = d => d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+  const kpis = S => [["Trades", S.n, ""], ["Réussite", fmt(S.win, 0) + " %", ""], ["Moyenne par trade", fmtR(S.avg), pn(S.avg)], ["Total", fmtR(S.tot), pn(S.tot)],
+    ["Profit factor", S.pf === Infinity ? "∞" : fmt(S.pf, 2), S.pf >= 1 ? "p" : "n"], ["Creux maximal", "−" + fmt(S.dd, 1) + " R", ""], ["Pire série", S.worst + " perte" + (S.worst > 1 ? "s" : ""), ""]]
+    .map(k => '<div class="stat"><span>' + k[0] + '</span><b class="' + k[2] + '">' + k[1] + "</b></div>").join("");
+  const be = 1 / (1 + o.rr) * 100;
+  let verdict;
+  if (F.n < 30) verdict = "Seulement " + F.n + " trade" + (F.n > 1 ? "s" : "") + " sur la période : c'est trop peu pour conclure. Allonge l'historique ou choisis une unité de temps plus petite.";
+  else if (F.avg > 0.1) verdict = "Sur cette période, les signaux filtrés par la tendance ont été rentables : " + fmtR(F.avg) + " par trade en moyenne, avec " + fmt(F.win, 0) + " % de réussite (il en faut " + fmt(be, 0) + " % pour être à l'équilibre avec un ratio 1 : " + fmt(o.rr, 1) + ").";
+  else if (F.avg > -0.1) verdict = "Sur cette période, les signaux filtrés sont proches de l'équilibre (" + fmtR(F.avg) + " par trade) : sans avantage net une fois les coûts comptés.";
+  else verdict = "Sur cette période, les signaux filtrés ont perdu de l'argent : " + fmtR(F.avg) + " par trade. Ils ne sont pas à suivre aveuglément sur " + esc(instName(o.key)) + " en " + tfn + ".";
+  const diff = F.avg - Al.avg, filterNote = Al.n >= 20 && F.n >= 10 ? " Le filtre de tendance " + (diff > 0.05 ? "a amélioré" : diff < -0.05 ? "a dégradé" : "a peu changé") + " le résultat moyen (" + fmtR(Al.avg) + " sans filtre)." : "";
+  const grp = (T, fn) => { const m = new Map(); for (const t of T) { const k = fn(t); if (!m.has(k)) m.set(k, []); m.get(k).push(t); } return [...m.entries()].map(([k, v]) => [k, rStats(v)]); };
+  const tbl = (title, rows) => '<section class="card"><h3>' + title + '</h3><table><thead><tr><th></th><th>Trades</th><th>Réussite</th><th>Moyenne</th><th>Total</th></tr></thead><tbody>' +
+    rows.map(([k, S]) => "<tr><td>" + esc(k) + "</td><td>" + S.n + "</td><td>" + fmt(S.win, 0) + ' %</td><td class="' + pn(S.avg) + '">' + fmtR(S.avg) + '</td><td class="' + pn(S.tot) + '">' + fmtR(S.tot) + "</td></tr>").join("") + "</tbody></table></section>";
+  const exits = grp(o.filt, t => t.how === "objectif" ? "Objectif atteint" : t.how === "stop" ? "Stop touché" : "Sortie après 100 bougies");
+  $("btOut").innerHTML =
+    '<p class="bt-verdict" data-level="' + (F.n < 30 ? "warn" : F.avg > 0.1 ? "ok" : F.avg > -0.1 ? "warn" : "stop") + '">' + verdict + filterNote + "</p>" +
+    '<p class="muted">' + esc(instName(o.key)) + ", signaux en " + tfn + ", du " + dfmt(from) + " au " + dfmt(to) + ". Ratio 1 : " + fmt(o.rr, 1) + ", filtre score ≥ " + o.minG + (o.cost ? ", coût de " + fmt(o.cost) + " par trade" : ", sans coût de transaction") + ".</p>" +
+    '<h3 class="bt-h">Signaux dans le sens de la tendance (comme l\'application les propose)</h3><div class="stats">' + kpis(F) + "</div>" +
+    '<section class="card"><div class="card-h"><h3>Courbe des résultats en R</h3><span class="bt-key"><i class="k1"></i>avec filtre <i class="k2"></i>sans filtre</span></div>' + curveSvg([{ pts: Al.curve, cls: "alt" }, { pts: F.curve, cls: "main" }]) + "</section>" +
+    '<div class="pf-grid">' + tbl("Par type de signal", grp(o.filt, t => t.s.type === "pb" ? "Repli sur EMA 20" : "Cassure")) + tbl("Par sens", grp(o.filt, t => t.s.dir > 0 ? "Achats" : "Ventes")) +
+    tbl("Par session (heure d'entrée)", grp(o.filt, t => sessionOf(t.t))) + tbl("Sorties", exits) + "</div>" +
+    '<h3 class="bt-h">Tous les signaux, sans filtre de tendance</h3><div class="stats">' + kpis(Al) + "</div>" +
+    '<section class="card bt-notes"><h3>Comment lire ce test</h3><p>Chaque signal de repli ou de cassure est rejoué à la clôture de sa bougie : stop derrière le plus bas (ou le plus haut) des 6 dernières bougies plus 0,2 ATR, objectif au ratio choisi, sortie forcée après 100 bougies. Un seul trade à la fois. Si le stop et l\'objectif sont touchés dans la même bougie, le test compte une perte, par prudence.</p>' +
+    "<p>Le filtre de tendance recalcule le score de l'application à la date de chaque signal, avec les unités de temps égales ou supérieures à " + tfn + " : l'historique des petites unités ne remonte pas assez loin. Les écarts de cotation, le glissement et les annonces économiques ne sont pas simulés : indique un coût par trade pour t'en approcher. Les résultats passés ne garantissent pas les résultats futurs.</p></section>";
+}
+
+/* =====================  Performance  ===================== */
+let pfTrades = [];
+async function pfLoad() {
+  const per = $("pfPeriod").value, from = per === "all" ? 0 : Date.now() - (+per) * 864e5;
+  try { pfTrades = await api("/api/trades?from=" + from); } catch (e) { $("pfStats").innerHTML = '<p class="err">' + esc(e.message) + "</p>"; return; }
+  const sel = $("pfInst"), cur = sel.value, ks = [...new Set(pfTrades.map(t => t.instrument).filter(Boolean))];
+  sel.innerHTML = '<option value="all">Tous les marchés</option>' + ks.map(k => '<option value="' + esc(k) + '">' + esc(instName(k)) + "</option>").join("");
+  if (ks.includes(cur)) sel.value = cur;
+  pfRender(); coachLoad();
+}
+function pfGroups(T) {
+  const asc = [...T].sort((a, b) => a.closed_at - b.closed_at), dayN = new Map(), prevOfDay = new Map();
+  const tagged = asc.map(t => {
+    const d = dayKey(t.closed_at), n = (dayN.get(d) || 0) + 1; dayN.set(d, n);
+    const p = prevOfDay.get(d); prevOfDay.set(d, t);
+    return Object.assign({}, t, { _rank: n === 1 ? "1er trade du jour" : n === 2 ? "2e trade du jour" : "3e trade et plus", _after: !p ? "Premier trade du jour" : (p.r || 0) > 0 ? "Après un gain" : "Après une perte" });
+  });
+  const G = (title, fn) => {
+    const m = new Map(); for (const t of tagged) { const k = fn(t) || "Non renseigné"; if (!m.has(k)) m.set(k, []); m.get(k).push(t.r || 0); }
+    return { title, rows: [...m.entries()].map(([k, rs]) => ({ k, n: rs.length, win: rs.filter(r => r > 0).length / rs.length * 100, avg: rs.reduce((a, b) => a + b, 0) / rs.length, tot: rs.reduce((a, b) => a + b, 0) })).sort((a, b) => b.tot - a.tot) };
+  };
+  return [G("Configuration", t => t.setup), G("Émotion", t => t.emotion), G("Session", t => sessionOf(t.opened_at || t.closed_at)), G("Jour de la semaine", t => JOURS[new Date(t.opened_at || t.closed_at).getDay()]),
+    G("Marché", t => instName(t.instrument)), G("Sens", t => t.dir > 0 ? "Achats" : "Ventes"), G("Règles respectées", t => t.rules_ok == null ? "Non noté" : t.rules_ok ? "Oui" : "Non"),
+    G("Rang dans la journée", t => t._rank), G("Après le trade précédent", t => t._after)];
+}
+function pfRender() {
+  const ins = $("pfInst").value, T = pfTrades.filter(t => t.r != null && (ins === "all" || t.instrument === ins)).sort((a, b) => a.closed_at - b.closed_at);
+  if (!T.length) {
+    $("pfStats").innerHTML = ""; $("pfCurve").innerHTML = ""; $("pfTables").innerHTML = "";
+    $("pfInsights").innerHTML = "<li>Aucun trade clôturé sur cette période. Les analyses apparaîtront dès tes premiers trades enregistrés dans le journal.</li>"; return;
+  }
+  const S = rStats(T.map(t => ({ R: t.r }))), wins = T.filter(t => t.r > 0), losses = T.filter(t => t.r <= 0);
+  const aw = wins.length ? wins.reduce((a, t) => a + t.r, 0) / wins.length : 0, al = losses.length ? losses.reduce((a, t) => a + t.r, 0) / losses.length : 0;
+  const rated = T.filter(t => t.rules_ok != null), okp = rated.length ? rated.filter(t => t.rules_ok === 1).length / rated.length * 100 : null;
+  const days = new Set(T.map(t => dayKey(t.closed_at))).size;
+  $("pfStats").innerHTML = [["Trades", T.length, ""], ["Réussite", fmt(S.win, 0) + " %", ""], ["Espérance par trade", fmtR(S.avg), pn(S.avg)], ["Total", fmtR(S.tot), pn(S.tot)],
+    ["Profit factor", S.pf === Infinity ? "∞" : fmt(S.pf, 2), S.pf >= 1 ? "p" : "n"], ["Gain moyen", fmtR(aw), "p"], ["Perte moyenne", fmtR(al), "n"],
+    ["Creux maximal", "−" + fmt(S.dd, 1) + " R", ""], ["Pire série", S.worst + " perte" + (S.worst > 1 ? "s" : ""), ""], ["Trades par jour actif", fmt(T.length / days, 1), ""],
+    ["Règles respectées", okp == null ? "—" : fmt(okp, 0) + " %", ""]].map(k => '<div class="stat"><span>' + k[0] + '</span><b class="' + k[2] + '">' + k[1] + "</b></div>").join("");
+  let pk = 0; const under = S.curve.map(v => { pk = Math.max(pk, v); return v - pk; });
+  $("pfCurve").innerHTML = curveSvg([{ pts: S.curve, cls: "main" }], { label: "Résultats cumulés en R" }) + '<div class="dd-h">Creux depuis le plus haut</div>' + curveSvg([{ pts: under, cls: "dd" }], { h: 80, label: "Creux depuis le plus haut, en R" });
+  const groups = pfGroups(T);
+  $("pfTables").innerHTML = groups.map(g => {
+    const mx = Math.max(0.01, ...g.rows.map(r => Math.abs(r.avg)));
+    return '<section class="card"><h3>' + g.title + '</h3><table class="pf-t"><thead><tr><th></th><th>Trades</th><th>Réussite</th><th>Moyenne</th><th>Total</th></tr></thead><tbody>' +
+      g.rows.map(r => "<tr><td>" + esc(r.k) + "</td><td>" + r.n + "</td><td>" + fmt(r.win, 0) + ' %</td><td><span class="mbar ' + (r.avg >= 0 ? "p" : "n") + '" style="width:' + Math.round(Math.abs(r.avg) / mx * 48) + 'px"></span><span class="' + pn(r.avg) + '">' + fmtR(r.avg) + '</span></td><td class="' + pn(r.tot) + '">' + fmtR(r.tot) + "</td></tr>").join("") + "</tbody></table></section>";
+  }).join("");
+  /* enseignements automatiques */
+  const min = T.length >= 40 ? 6 : T.length >= 15 ? 4 : 3, out = [];
+  const cands = groups.filter(g => !["Marché", "Sens"].includes(g.title)).flatMap(g => g.rows.filter(r => r.n >= min && r.k !== "Non renseigné" && r.k !== "Non noté").map(r => Object.assign({ g: g.title }, r)));
+  const worst = cands.filter(r => r.avg < 0 && r.avg < S.avg - 0.25).sort((a, b) => a.tot - b.tot)[0];
+  const best = cands.filter(r => r.avg > 0 && r.avg > S.avg + 0.25).sort((a, b) => b.tot - a.tot)[0];
+  const label = r => r.g === "Configuration" ? "la configuration « " + r.k + " »" : r.g === "Émotion" ? "les trades pris en étant « " + r.k.toLowerCase() + " »" : r.g === "Session" ? "la session " + r.k : r.g === "Jour de la semaine" ? "le " + r.k.toLowerCase() : r.g === "Règles respectées" ? "les trades où tu as noté « règles respectées : " + r.k.toLowerCase() + " »" : "« " + r.k.toLowerCase() + " »";
+  if (best) out.push("<b>Ton point fort :</b> " + label(best) + ", " + fmtR(best.avg) + " par trade en moyenne sur " + best.n + " trades. Concentre-toi dessus.");
+  if (worst) out.push("<b>Ce qui te coûte le plus :</b> " + label(worst) + ", " + fmtR(worst.avg) + " par trade sur " + worst.n + " trades, soit " + fmtR(worst.tot) + " au total. C'est la première chose à corriger.");
+  const rg = groups.find(g => g.title === "Règles respectées").rows, ry = rg.find(r => r.k === "Oui"), rn = rg.find(r => r.k === "Non");
+  if (ry && rn && ry.n >= 3 && rn.n >= 3) out.push("<b>Discipline :</b> quand tu respectes tes règles, tu fais " + fmtR(ry.avg) + " par trade, contre " + fmtR(rn.avg) + " quand tu ne les respectes pas" + (ry.avg > rn.avg ? ". Tes règles te protègent." : "."));
+  const ag = groups.find(g => g.title === "Après le trade précédent").rows, aL = ag.find(r => r.k === "Après une perte"), aW = ag.find(r => r.k === "Après un gain");
+  if (aL && aL.n >= min && aL.avg < S.avg - 0.2) out.push("<b>Après une perte</b>, ton trade suivant de la journée rapporte " + fmtR(aL.avg) + " en moyenne (" + aL.n + " trades) : attention au trading de revanche, fais une pause après un stop.");
+  if (aW && aW.n >= min && aW.avg < S.avg - 0.2) out.push("<b>Après un gain</b>, ton trade suivant rapporte " + fmtR(aW.avg) + " en moyenne : l'excès de confiance te coûte, garde la même exigence.");
+  const rk = groups.find(g => g.title === "Rang dans la journée").rows, r3 = rk.find(r => r.k === "3e trade et plus"), r1 = rk.find(r => r.k === "1er trade du jour");
+  if (r3 && r1 && r3.n >= min && r3.avg < r1.avg - 0.3) out.push("<b>Le 3e trade et les suivants</b> rapportent " + fmtR(r3.avg) + " contre " + fmtR(r1.avg) + " pour le premier : limiter tes trades par jour améliorerait tes résultats.");
+  if (S.avg > 0 && aw && al && Math.abs(al) > aw) out.push("<b>Gestion des sorties :</b> ta perte moyenne (" + fmtR(al) + ") dépasse ton gain moyen (" + fmtR(aw) + "). Tu es gagnant grâce à ton taux de réussite, mais laisser courir un peu plus tes gains rendrait tes résultats plus robustes.");
+  if (!out.length) out.push(T.length < 15 ? "Encore " + (15 - T.length) + " trades et les premiers enseignements fiables apparaîtront. Pense à noter la configuration et l'émotion de chaque trade : c'est ce qui rend l'analyse utile." : "Pas d'écart marquant entre tes catégories de trades sur cette période : tes résultats sont réguliers.");
+  $("pfInsights").innerHTML = out.slice(0, 5).map(x => "<li>" + x + "</li>").join("");
+}
+
+/* ----- Coach IA ----- */
+function mdLite(md) {
+  const lines = esc(md).split(/\r?\n/), out = []; let list = null;
+  const inl = s => s.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/(^|[^*])\*([^*]+)\*/g, "$1<i>$2</i>");
+  const close = () => { if (list) { out.push("</" + list + ">"); list = null; } };
+  for (const l of lines) {
+    let m;
+    if ((m = l.match(/^#{1,4}\s+(.*)/))) { close(); out.push("<h4>" + inl(m[1]) + "</h4>"); }
+    else if ((m = l.match(/^\s*\d+[.)]\s+(.*)/))) { if (list !== "ol") { close(); out.push("<ol>"); list = "ol"; } out.push("<li>" + inl(m[1]) + "</li>"); }
+    else if ((m = l.match(/^\s*[-*•]\s+(.*)/))) { if (list !== "ul") { close(); out.push("<ul>"); list = "ul"; } out.push("<li>" + inl(m[1]) + "</li>"); }
+    else if (!l.trim()) close();
+    else { close(); out.push("<p>" + inl(l) + "</p>"); }
+  }
+  close(); return out.join("");
+}
+function coachShow(rep) {
+  $("coachText").innerHTML = rep && rep.text ? mdLite(rep.text) : "";
+  $("coachWhen").textContent = rep && rep.t ? "Bilan du " + new Date(rep.t).toLocaleString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) + ", " + rep.n + " trades sur " + rep.days + " jours" + (rep.provider ? ", via " + rep.provider : "") : "";
+}
+async function coachLoad() {
+  try {
+    const r = await api("/api/coach");
+    $("coachRun").disabled = !r.enabled;
+    $("coachMsg").textContent = r.enabled ? "" : (ME.role === "admin" ? "Pour activer le coach, ajoute au Worker dans Cloudflare le secret ANTHROPIC_API_KEY ou OPENROUTER_API_KEY (voir l'aide)." : "Le coach IA n'est pas encore activé par l'administrateur.");
+    $("coachProv").textContent = r.provider === "OpenRouter" ? "à OpenRouter, puis au fournisseur du modèle choisi (" + (r.model || "") + ")," : r.provider === "Anthropic" ? "au service d'IA d'Anthropic" : "au service d'IA configuré";
+    coachShow(r.report);
+  } catch (e) { $("coachMsg").textContent = e.message; }
+}
+async function coachRun() {
+  $("coachRun").disabled = true; $("coachMsg").textContent = "Le coach relit tes trades, compte une trentaine de secondes…";
+  try { const r = await api("/api/coach", { method: "POST", json: { days: +$("coachDays").value } }); coachShow(r); $("coachMsg").textContent = ""; }
+  catch (e) { $("coachMsg").textContent = e.message; }
+  finally { $("coachRun").disabled = false; }
+}
+
+/* =====================  Mode prop firm  ===================== */
+const PROP_PRESETS = {
+  "2p1": { name: "Challenge, phase 1", daily: 5, dailyBase: "initial", maxLoss: 10, maxType: "static", target: 10, minDays: 4 },
+  "2p2": { name: "Challenge, phase 2", daily: 5, dailyBase: "initial", maxLoss: 10, maxType: "static", target: 5, minDays: 4 },
+  "1p": { name: "Challenge en 1 phase", daily: 4, dailyBase: "start", maxLoss: 6, maxType: "trailing", target: 10, minDays: 0 },
+  funded: { name: "Compte financé", daily: 5, dailyBase: "initial", maxLoss: 10, maxType: "static", target: "", minDays: 0 },
+  custom: { name: "Règles personnalisées" },
+};
+const PROP_DEF = { on: false, preset: "2p1", capital: 100000, daily: 5, dailyBase: "initial", maxLoss: 10, maxType: "static", target: 10, minDays: 4, tz: "Europe/Prague", start: "", src: "ctrader", risk: 500, manualBal: "" };
+function propCfg() { try { return Object.assign({}, PROP_DEF, JSON.parse(store("prop") || "{}")); } catch { return Object.assign({}, PROP_DEF); } }
+let propLive = null, propTimer = null, propDays = null;
+function tzMidnight(tz, t = Date.now()) {
+  if (tz === "local") { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); }
+  const off = tzOffsetMin(tz, t) * 6e4; return Math.floor((t + off) / 864e5) * 864e5 - off;
+}
+async function propRefresh() {
+  const c = propCfg(); clearTimeout(propTimer);
+  if (!c.on) { propLive = null; propRender(); return; }
+  const cap = +c.capital || 0, reset = tzMidnight(c.tz), startTs = c.start ? new Date(c.start + "T00:00:00").getTime() : 0;
+  try {
+    if (c.src === "ctrader") {
+      await ctEnsure(true);
+      const A = { ctidTraderAccountId: ct.account }, T = (await ctSend(2121, A)).trader || {}, md = Number(T.moneyDigits != null ? T.moneyDigits : 2), bal = Number(T.balance || 0) / Math.pow(10, md);
+      let unr = 0; try { const u = await ctSend(2187, A, 15000), m2 = Number(u.moneyDigits != null ? u.moneyDigits : md); unr = (u.positionUnrealizedPnL || []).reduce((s, p) => s + Number(p.netUnrealizedPnL || 0), 0) / Math.pow(10, m2); } catch {}
+      let realized = 0;
+      try { const dl = await ctSend(2133, Object.assign({ fromTimestamp: reset, toTimestamp: Date.now(), maxRows: 1000 }, A), 15000); for (const d of dl.deal || []) { const p = d.closePositionDetail; if (p) realized += (Number(p.grossProfit || 0) + Number(p.swap || 0) + Number(p.commission || 0)) / Math.pow(10, Number(p.moneyDigits != null ? p.moneyDigits : md)); } } catch {}
+      propLive = { bal, eq: bal + unr, dayStart: bal - realized, t: Date.now(), src: "cTrader (" + (ct.accLabel || "compte connecté") + ")" };
+    } else if (c.src === "journal") {
+      const tr = await api("/api/trades?from=" + (startTs || 0)), risk = +c.risk || 0;
+      const sum = f => tr.filter(f).reduce((s, t) => s + (t.r || 0) * risk, 0), bal = cap + sum(() => true);
+      let unr = 0; if (pos && typeof lastPx === "function" && lastPx() != null && pos.sl0 != null) { const rk = Math.abs(pos.entry - pos.sl0); if (rk) unr = pos.dir * (lastPx() - pos.entry) / rk * risk; }
+      propLive = { bal, eq: bal + unr, dayStart: cap + sum(t => t.closed_at < reset), t: Date.now(), src: "journal (" + fmt(risk, 0) + " par R)" };
+    } else {
+      const bal = parseFloat(String(c.manualBal || "").replace(",", ".")); if (!isFinite(bal)) throw new Error("Indique ton solde actuel dans les réglages du mode prop firm.");
+      const k = "prop-ds-" + reset; if (store(k) == null) store(k, String(bal));
+      propLive = { bal, eq: bal, dayStart: +store(k), t: Date.now(), src: "saisie manuelle" };
+    }
+    const pk = Math.max(+store("prop-peak") || cap, propLive.bal); store("prop-peak", String(pk));
+    try { const tr = await api("/api/trades?from=" + (startTs || Date.now() - 90 * 864e5)); propDays = new Set(tr.map(t => dayKey(tzMidnight(c.tz, t.closed_at) + 12 * 36e5))).size; } catch {}
+  } catch (e) { propLive = { err: e.message, t: Date.now() }; }
+  propRender();
+  if (typeof renderDay === "function") renderDay();
+  propTimer = setTimeout(propRefresh, c.src === "ctrader" ? 30000 : 60000);
+}
+function propEval() {
+  const c = propCfg(), L = propLive; if (!c.on || !L || L.err) return null;
+  const cap = +c.capital || 0, dayAmt = (c.dailyBase === "start" ? L.dayStart : cap) * (+c.daily || 0) / 100, dayFloor = L.dayStart - dayAmt, dayLeft = L.eq - dayFloor;
+  const peak = Math.max(cap, +store("prop-peak") || cap, L.bal), maxAmt = cap * (+c.maxLoss || 0) / 100;
+  const maxFloor = c.maxType === "trailing" ? Math.min(cap, peak - maxAmt) : cap - maxAmt, maxLeft = L.eq - maxFloor, left = Math.min(dayLeft, maxLeft);
+  const tgt = +c.target ? cap * c.target / 100 : null, risk = +c.risk || 0;
+  return { c, L, cap, dayAmt, dayFloor, dayLeft, maxAmt, maxFloor, maxLeft, left, tgt, prog: tgt ? (L.bal - cap) / tgt : null, breach: dayLeft <= 0 || maxLeft <= 0, warn: dayLeft > 0 && maxLeft > 0 && risk > 0 && left < risk, risk };
+}
+function propRender() {
+  const box = $("propCard"), c = propCfg(), P = propEval();
+  if (!box) return;
+  box.hidden = !c.on;
+  const rk = $("rkProp");
+  if (!c.on) { if (rk) rk.hidden = true; return; }
+  const name = (PROP_PRESETS[c.preset] || PROP_PRESETS.custom).name;
+  if (!propLive) { box.innerHTML = '<div class="card-h"><h3>Compte prop firm : ' + esc(name) + '</h3></div><p class="muted">Lecture du solde…</p>'; return; }
+  if (propLive.err) { box.innerHTML = '<div class="card-h"><h3>Compte prop firm : ' + esc(name) + '</h3></div><p class="err">' + esc(propLive.err) + "</p>"; if (rk) rk.hidden = true; return; }
+  const bar = (lbl, used, txt, cls) => '<div class="prop-row"><span>' + lbl + '</span><div class="prop-bar ' + (cls || "") + '"><i style="width:' + Math.max(0, Math.min(100, used * 100)).toFixed(1) + '%"></i></div><span>' + txt + "</span></div>";
+  const clamp01 = x => Math.max(0, Math.min(1, x));
+  const dUsed = P.dayAmt ? clamp01(1 - P.dayLeft / P.dayAmt) : 0, mUsedSafe = P.maxAmt ? clamp01(1 - P.maxLeft / P.maxAmt) : 0;
+  const lvl = u => u >= 0.8 ? "stop" : u >= 0.5 ? "warn" : "";
+  let msg, level;
+  if (P.breach) { level = "stop"; msg = P.dayLeft <= 0 ? "Limite de perte journalière atteinte : arrête de trader aujourd'hui. Chez la plupart des prop firms, ce dépassement fait échouer le challenge, vérifie ta situation sur ton espace." : "Perte maximale atteinte : le compte est en infraction avec les règles de ta prop firm."; }
+  else if (P.warn) { level = "warn"; msg = "Attention : un stop complet de " + fmtMoney(P.risk) + " te ferait dépasser ta limite. Il te reste " + fmtMoney(P.left) + " : réduis la taille de ta prochaine position ou arrête pour aujourd'hui."; }
+  else { level = "ok"; msg = "Tu peux encore perdre " + fmtMoney(P.left) + " avant ta limite" + (P.risk ? ", soit " + fmt(P.left / P.risk, 1) + " R au risque actuel" : "") + "."; }
+  const days = propDays != null && +c.minDays ? ", " + Math.min(propDays, +c.minDays) + " / " + c.minDays + " jours de trading" : "";
+  box.innerHTML = '<div class="card-h"><h3>Compte prop firm : ' + esc(name) + '</h3><span class="muted" style="margin:0">Solde ' + fmtMoney(P.L.bal) + (Math.abs(P.L.eq - P.L.bal) > 0.005 ? ", valeur avec positions ouvertes " + fmtMoney(P.L.eq) : "") + "</span></div>" +
+    '<p class="prop-msg" data-level="' + level + '">' + msg + "</p>" +
+    bar("Perte du jour", dUsed, "reste " + fmtMoney(Math.max(0, P.dayLeft)) + " sur " + fmtMoney(P.dayAmt), lvl(dUsed)) +
+    bar("Perte maximale", mUsedSafe, "reste " + fmtMoney(Math.max(0, P.maxLeft)) + " (seuil " + fmtMoney(P.maxFloor) + (c.maxType === "trailing" ? ", suiveur" : "") + ")", lvl(mUsedSafe)) +
+    (P.tgt ? bar("Objectif", Math.max(0, P.prog), (P.L.bal - P.cap >= 0 ? "+" : "") + fmtMoney(P.L.bal - P.cap) + " sur +" + fmtMoney(P.tgt) + " (" + fmt(Math.max(0, P.prog) * 100, 0) + " %)", "goal") : "") +
+    '<p class="muted prop-src">Suivi via ' + esc(P.L.src) + ", mis à jour à " + new Date(P.L.t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) + days + ". Début de journée à minuit (" + (c.tz === "local" ? "heure locale" : c.tz) + ") : solde de départ " + fmtMoney(P.L.dayStart) + ".</p>";
+  if (rk) { rk.hidden = false; rk.dataset.level = level; rk.textContent = "Mode prop firm : il te reste " + fmtMoney(Math.max(0, P.left)) + " avant ta limite. Le montant risqué sur ce trade ne doit pas dépasser cette somme."; }
+}
+function propForm() {
+  const f = $("propForm"), c = propCfg();
+  for (const k of Object.keys(PROP_DEF)) { const el = f.elements[k]; if (!el) continue; if (el.type === "checkbox") el.checked = !!c[k]; else el.value = c[k] == null ? "" : c[k]; }
+  const sync = () => { f.querySelector("[data-manual]").hidden = f.elements.src.value !== "manual"; };
+  sync();
+  f.elements.src.addEventListener("change", sync);
+  f.elements.preset.addEventListener("change", () => { const p = PROP_PRESETS[f.elements.preset.value]; if (!p || f.elements.preset.value === "custom") return; for (const k of ["daily", "dailyBase", "maxLoss", "maxType", "target", "minDays"]) f.elements[k].value = p[k]; });
+  f.addEventListener("submit", e => {
+    e.preventDefault(); const old = propCfg(), n = {};
+    for (const k of Object.keys(PROP_DEF)) { const el = f.elements[k]; if (!el) continue; n[k] = el.type === "checkbox" ? el.checked : el.value.trim(); }
+    for (const k of ["capital", "daily", "maxLoss", "risk"]) n[k] = parseFloat(String(n[k]).replace(",", ".")) || PROP_DEF[k];
+    n.target = n.target === "" ? "" : parseFloat(String(n.target).replace(",", ".")) || ""; n.minDays = parseInt(n.minDays, 10) || 0;
+    if (+old.capital !== +n.capital || old.preset !== n.preset || old.start !== n.start) store("prop-peak", String(n.capital));
+    store("prop", JSON.stringify(n)); $("propMsg").textContent = "Enregistré."; setTimeout(() => $("propMsg").textContent = "", 2500);
+    propRefresh();
+  });
+}
+
+/* =====================  Initialisation  ===================== */
+function toolsInit() {
+  scan.list = scanLoad(); scanChips(); scanRender();
+  $("scRun").addEventListener("click", scanRun);
+  $("scAddForm").addEventListener("submit", e => { e.preventDefault(); scanAdd($("scAdd").value); });
+  $("scAuto").checked = store("scan-auto") !== "0";
+  $("scAuto").addEventListener("change", () => store("scan-auto", $("scAuto").checked ? "1" : "0"));
+  setInterval(() => { const v = $("view-scanner"); if ($("scAuto").checked && v && !v.hidden && !document.hidden && !scan.busy && Date.now() - scan.at > 290000) scanRun(); }, 30000);
+  $("btRun").addEventListener("click", btRun);
+  for (const [id, k] of [["btTf", "bt-tf"], ["btRr", "bt-rr"], ["btMin", "bt-min"], ["btBars", "bt-bars"]]) { const v = store(k); if (v && [...$(id).options].some(o => o.value === v)) $(id).value = v; $(id).addEventListener("change", () => store(k, $(id).value)); }
+  $("pfPeriod").addEventListener("change", pfLoad); $("pfInst").addEventListener("change", pfRender);
+  $("coachRun").addEventListener("click", coachRun);
+  propForm(); propRefresh();
+}
+
+toolsInit();
 initShell();
 </script>
 <script>
