@@ -12,6 +12,7 @@ Plateforme d'aide au trading pour les équipes de traders, protégée par mot de
 | **Marché** | Tendance sur 5 min, 15 min, 30 min, 1 h et 4 h, score global, flux de volume en direct, zones acheteurs et vendeurs |
 | **Graphique et entrées** | Graphique en temps réel (EMA, volume, profil de volume, zones, signaux), plan de trade, entrées proposées, vue TradingView Pepperstone |
 | **Liquidité** | Carte du carnet d'ordres au fil du temps (style heatmap) : murs d'ordres et depuis quand ils tiennent, transactions au marché, carnet actuel, déséquilibre acheteurs / vendeurs près du prix |
+| **Footprint** | Volumes achetés et vendus au marché prix par prix dans chaque bougie (1 min à 1 h) : delta, delta cumulé, POC, déséquilibres en diagonale et empilés, enchères inachevées, signaux d'absorption et de divergence |
 | **Ma position** | Suivi en continu avec verdict (saine, vigilance, sortie conseillée) et propositions pour sécuriser les gains en déplaçant le stop |
 | **Journal** | Chaque position clôturée est enregistrée : statistiques, courbe des résultats en R, résultats par configuration, émotions, respect des règles, export CSV |
 | **Calcul du risque** | Taille de position en lots selon le capital, le risque par trade et la distance du stop |
@@ -53,6 +54,8 @@ Le dossier `functions/` contient les mêmes API au format Cloudflare Pages : la 
 | **cTrader Open API** | Or, Nasdaq (ton broker) | Oui, tick par tick | Volume en ticks | Ton compte cTrader, en lecture seule |
 
 La vue **Liquidité** utilise le carnet complet de PAXG/USDT sur Binance (instantané de 1 000 niveaux puis mises à jour toutes les 100 ms, avec resynchronisation automatique en cas de trou dans le flux) ou la profondeur de marché de ton broker via cTrader, si celui-ci la diffuse. Twelve Data ne fournit pas de carnet.
+
+La vue **Footprint** utilise les transactions de PAXG/USDT sur Binance, avec le côté de l'agresseur : historique récupéré au démarrage par l'API `aggTrades` (jusqu'à 220 requêtes, en remontant les identifiants de transactions), puis flux en direct, avec récupération automatique des transactions manquées après une coupure. Avec cTrader, qui ne diffuse pas les transactions, c'est un footprint en ticks construit en direct.
 
 ## Script TradingView
 
