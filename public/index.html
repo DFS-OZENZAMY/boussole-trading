@@ -4330,7 +4330,14 @@ async function coachLoad() {
   try {
     const r = await api("/api/coach");
     $("coachRun").disabled = !r.enabled;
-    $("coachMsg").textContent = r.enabled ? "" : (ME.role === "admin" ? "Pour activer le coach, ajoute au Worker dans Cloudflare le secret ANTHROPIC_API_KEY ou OPENROUTER_API_KEY (voir l'aide)." : "Le coach IA n'est pas encore activé par l'administrateur.");
+    let why = "";
+    if (!r.enabled && ME.role === "admin") {
+      const H = r.hints || [], names = H.map(h => h.name + (h.empty ? " (vide)" : ""));
+      why = !H.length
+        ? "Le serveur ne voit aucune clé d'IA. Dans Cloudflare : Workers, boussole-trading, Settings, Variables and Secrets (pas la partie Build), ajoute OPENROUTER_API_KEY de type Secret, puis Deploy."
+        : "Le serveur voit " + names.join(", ") + ", mais pas de clé utilisable nommée exactement OPENROUTER_API_KEY ou ANTHROPIC_API_KEY. Vérifie le nom et que la valeur n'est pas vide.";
+    }
+    $("coachMsg").textContent = r.enabled ? "" : (ME.role === "admin" ? why : "Le coach IA n'est pas encore activé par l'administrateur.");
     $("coachProv").textContent = r.provider === "OpenRouter" ? "à OpenRouter, puis au fournisseur du modèle choisi (" + (r.model || "") + ")," : r.provider === "Anthropic" ? "au service d'IA d'Anthropic" : "au service d'IA configuré";
     coachShow(r.report);
   } catch (e) { $("coachMsg").textContent = e.message; }

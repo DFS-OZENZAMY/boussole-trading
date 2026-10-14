@@ -15,5 +15,9 @@
     { "binding": "DB", "database_name": "bossole_trading", "database_id": "626fcd49-7d55-4cf4-99ce-4cd2afea2911" }
   ],
 
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+
+  // Conserve les variables de type « Text » ajoutées dans le tableau de bord Cloudflare lors des déploiements
+  // (clé du coach IA, choix du modèle…). Les variables de type « Secret » sont toujours conservées.
+  "keep_vars": true
 }
