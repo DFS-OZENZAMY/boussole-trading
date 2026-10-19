@@ -520,6 +520,28 @@ svg.eq .zero{stroke:var(--line);stroke-width:1}
 .prop-risk{margin:12px 0 0;padding:10px 12px;border-radius:8px;border-left:4px solid var(--bull);background:color-mix(in srgb,var(--panel) 80%,var(--line))}
 .prop-risk[data-level=warn]{border-left-color:var(--gold)} .prop-risk[data-level=stop]{border-left-color:var(--bear)}
 @media (max-width:560px){.prop-row{grid-template-columns:1fr}.sc-add{max-width:none}}
+/* ----- Robot ----- */
+.bot-state{margin:0 0 6px;padding:12px 16px;border-radius:10px;border-left:5px solid var(--flat);background:var(--panel)}
+.bot-state[data-level=ok]{border-left-color:var(--bull)} .bot-state[data-level=warn]{border-left-color:var(--bear)}
+.bot-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:16px;align-items:start}
+.bot-side{display:flex;flex-direction:column;gap:16px} .bot-side .card{margin:0}
+.bot-val{margin-top:16px}
+.bot-tbl .tag{white-space:nowrap}
+@media (max-width:1100px){.bot-grid{grid-template-columns:minmax(0,1fr)}}
+.bot-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.bot-tbl th{text-align:left;font-size:12px;color:var(--mute);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line)}
+.bot-tbl td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+.bot-log,.bot-pos{list-style:none;margin:0;padding:0;max-height:420px;overflow:auto}
+.bot-log li{display:grid;grid-template-columns:86px 1fr;gap:8px;padding:7px 0 7px 10px;border-top:1px solid var(--line);border-left:3px solid var(--flat);font-size:13px}
+.bot-log li:first-child{border-top:0}
+.bot-log li.lv-ok{border-left-color:var(--bull)} .bot-log li.lv-trade{border-left-color:var(--gold)} .bot-log li.lv-loss,.bot-log li.lv-err{border-left-color:var(--bear)} .bot-log li.lv-skip{border-left-color:var(--line)}
+.bot-log time{color:var(--mute);font-weight:600}
+.bot-pos li{padding:8px 0;border-top:1px solid var(--line);font-size:14px} .bot-pos li:first-child{border-top:0}
+#botForm fieldset{border:0;padding:0;margin:14px 0 0} #botForm legend{font-weight:650;font-size:14px;margin-bottom:6px}
+.chk-list{display:flex;flex-direction:column;gap:6px}
+#botForm .form-grid>label{min-width:0} #botForm select,#botForm input:not([type=checkbox]){width:100%;min-width:0}
+.bot-live{border-left:5px solid var(--bear)}
+button.danger{background:var(--bear);border-color:var(--bear);color:#fff}
 /* ----- Mobile ----- */
 @media (max-width:1100px){.day-grid,.j-grid,.rk,.set-grid{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:900px){
@@ -552,6 +574,7 @@ svg.eq .zero{stroke:var(--line);stroke-width:1}
       <button type="button" data-view="liquidite"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h7M3 9h12M3 13h5M3 17h14M3 21h9"/><path d="M19 4v16"/></svg><span>Liquidité</span></button>
       <button type="button" data-view="footprint"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="7" height="18" rx="1.5"/><rect x="13" y="6" width="7" height="12" rx="1.5"/><path d="M4 9h7M4 15h7M13 10h7M13 14h7"/></svg><span>Footprint</span></button>
       <button type="button" data-view="fiabilite"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V4M4 20h16"/><path d="M7 15l4-4 3 3 5-6"/></svg><span>Fiabilité des signaux</span></button>
+      <button type="button" data-view="robot"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 8V5M9 13h.01M15 13h.01M9.5 16h5"/><circle cx="12" cy="4" r="1"/></svg><span>Robot</span></button>
       <button type="button" data-view="position"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.8"/></svg><span>Ma position</span><i class="dot" id="navPosDot"></i></button>
       <div class="sep"></div>
       <button type="button" data-view="journal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11M9 8h6"/></svg><span>Journal</span></button>
@@ -842,6 +865,48 @@ svg.eq .zero{stroke:var(--line);stroke-width:1}
         </section>
       </div>
 
+      <div class="view" id="view-robot" data-view="robot" hidden>
+        <div class="vh"><div><h2>Robot de trading</h2><p>Le robot ne prend que les signaux de stratégies qui ont prouvé un avantage sur ton marché, avec ton coût réel, sur une période d'essai puis une période de vérification. Il fonctionne d'abord sur ton compte démo cTrader.</p></div>
+          <div class="tools"><button type="button" id="botStart">Démarrer le robot</button><button type="button" class="danger" id="botStop" hidden>Arrêter le robot</button><button type="button" class="ghost" id="botClose">Fermer toutes ses positions</button></div></div>
+        <p class="bot-state" id="botState" data-level="off"></p>
+        <p class="muted" id="botToday"></p>
+        <section class="card bot-live" id="botLive" hidden><h3>Compte réel connecté</h3><p id="botLiveTxt"></p><button type="button" class="ghost" id="botLiveBtn"></button></section>
+        <section class="card bot-val">
+          <div class="card-h"><h3>Validation des stratégies</h3><button type="button" class="ghost" id="botValBtn">Valider maintenant</button></div>
+          <p class="status" id="botValStatus"></p>
+          <div id="botVal"></div>
+          <p class="muted">Chaque stratégie est testée sur les 70 % les plus anciens de l'historique, où le meilleur réglage est choisi, puis vérifiée sur les 30 % suivants. Elle n'est validée que si elle reste gagnante sur les deux après déduction du coût (au moins 10 trades et +0,1 R en moyenne en vérification). La validation est refaite chaque semaine, et une stratégie qui perd en réel (moins de −0,2 R par trade sur 8 trades) est suspendue automatiquement.</p>
+        </section>
+        <div class="bot-grid">
+          <section class="card">
+            <h3>Réglages du robot</h3>
+            <form id="botForm">
+              <div class="form-grid">
+                <label>Unité de temps <select name="tf"><option value="5m">5 min (scalping)</option><option value="15m">15 min</option></select></label>
+                <label>Risque par trade (% du capital) <input name="risk" inputmode="decimal"></label>
+                <label>Trades maximum par jour <input name="maxTrades" inputmode="numeric"></label>
+                <label>Perte maximale du jour (R) <input name="maxLossR" inputmode="decimal"></label>
+                <label>Positions simultanées maximum <input name="maxPos" inputmode="numeric"></label>
+                <label>Coût maximal (% du risque) <input name="maxCost" inputmode="decimal"></label>
+              </div>
+              <fieldset><legend>Marchés</legend><div class="chk-list" id="botMarkets"></div></fieldset>
+              <fieldset><legend>Stratégies</legend><div class="chk-list" id="botStrats"></div></fieldset>
+              <fieldset><legend>Sessions de trading</legend><div class="chk-list" id="botSess"></div></fieldset>
+              <label class="chk"><input type="checkbox" name="flow"> Confirmation par le flux d'ordres (marché affiché uniquement) : refuser un signal contredit par une absorption ou une divergence de delta</label>
+              <div class="row-btns"><button type="submit">Enregistrer</button><span class="msg" id="botMsg"></span></div>
+            </form>
+          </section>
+          <div class="bot-side">
+            <section class="card"><h3>Positions du robot</h3><div id="botPos"></div></section>
+            <section class="card"><h3>Activité</h3><div id="botLog"></div></section>
+          </div>
+        </div>
+        <section class="card bt-notes"><h3>Avant de l'utiliser</h3>
+          <p>Le robot tourne dans ton navigateur : garde la page ouverte et l'ordinateur allumé. S'il s'arrête, les positions ouvertes restent protégées par leur stop et leur objectif posés chez le broker. Il faut un jeton cTrader avec le droit de trading (accès « trading » lors de la création du jeton).</p>
+          <p>Il passe un ordre au marché à la clôture d'une bougie quand une stratégie validée donne un signal, que la session est ouverte, que l'écart de cotation est raisonnable et que tes limites (trades et perte du jour, positions, prop firm) le permettent. Chaque décision, prise ou refusée, est expliquée dans l'activité, et chaque trade fermé est enregistré dans ton journal. Si ta prop firm interdit ou encadre le trading automatique, respecte ses règles. Les résultats passés ne garantissent pas les résultats futurs : laisse tourner le robot plusieurs semaines en démo et compare ses résultats réels à la validation avant d'envisager un compte réel.</p>
+        </section>
+      </div>
+
       <div class="view" id="view-position" data-view="position" hidden>
         <section class="pos" aria-label="Ma position">
     <div class="pos-head">
@@ -1060,6 +1125,12 @@ svg.eq .zero{stroke:var(--line);stroke-width:1}
     <p>La page Performance découpe tes trades du journal par configuration, émotion, session, jour, marché, respect des règles, rang dans la journée et résultat du trade précédent. La section « À retenir » met en avant ton point fort et ce qui te coûte le plus, à partir d'un nombre minimal de trades pour éviter les conclusions hâtives. Plus tu renseignes la configuration et l'émotion de chaque trade, plus l'analyse est utile.</p>
     <p>Le coach IA relit tes trades de la période choisie, tes notes et tes règles, puis rédige un bilan avec trois actions concrètes pour la semaine suivante. Un bilan peut être demandé toutes les 10 minutes.</p>
     <p>Pour l'activer, l'administrateur ajoute dans Cloudflare, sur le Worker boussole-trading (Settings, puis Variables and Secrets), l'un de ces deux secrets. ANTHROPIC_API_KEY, une clé de l'API d'Anthropic : le bilan est rédigé par Claude, et tes trades sont envoyés à Anthropic. Ou OPENROUTER_API_KEY, une clé OpenRouter : tu peux alors choisir parmi des centaines de modèles avec la variable OPENROUTER_MODEL (par défaut anthropic/claude-sonnet-5.5), et tes trades transitent par OpenRouter puis par le fournisseur du modèle. Si les deux clés sont présentes, Anthropic est utilisé, sauf si la variable COACH_PROVIDER vaut openrouter. Dans les deux cas, l'utilisation est facturée par le service choisi selon le volume.</p>
+  </details>
+  <details>
+    <summary>Le robot de trading</summary>
+    <p>Le robot passe des ordres sur ton compte cTrader à partir de quatre stratégies de trading court : la cassure de volatilité inspirée de Larry Williams (le prix dépasse l'ouverture du jour d'une fraction de l'amplitude moyenne des derniers jours), la cassure du range des 30 premières minutes de Londres et de New York, le retour au VWAP après un excès de deux écarts-types en marché sans tendance, et les replis ou cassures de l'application dans le sens de la tendance. Le flux d'ordres du footprint sert de confirmation sur le marché affiché.</p>
+    <p>Aucune stratégie n'est utilisée sans preuve. Pour chaque marché, le robot teste chacune sur les 70 % les plus anciens de l'historique, y choisit le meilleur réglage parmi quelques variantes, puis vérifie ce choix sur les 30 % suivants, jamais vus. Le coût réel (écart de cotation actuel) est déduit de chaque trade. Seules les stratégies gagnantes sur les deux périodes sont activées, et la validation est refaite chaque semaine. Comme plusieurs stratégies et réglages sont testés, l'une peut paraître gagnante par hasard : c'est pourquoi le robot suit aussi ses résultats réels et suspend une stratégie qui perd plus de 0,2 R par trade en moyenne sur 8 trades. S'il n'y a aucune stratégie validée, le robot ne trade pas : c'est voulu.</p>
+    <p>Protections : compte démo obligatoire tant que tu n'as pas autorisé le compte réel par écrit, risque de 0,25 % par trade par défaut et jamais plus de 1 %, nombre de trades et perte maximale par jour, positions simultanées limitées, une seule position par marché, respect du mode prop firm, stop et objectif posés chez le broker dès l'entrée, et bouton de fermeture d'urgence. Après un rechargement de la page, le robot reste arrêté par sécurité.</p>
   </details>
   <details>
     <summary>Le mode prop firm</summary>
@@ -1546,6 +1617,7 @@ function ctConnect(c) {
       const t = m.payloadType, p = m.payload || {};
       if (t === 51) return;
       if (t === 2131) { /* événement de prix */
+        if (p.symbolId != null) { const Q = ct.quotes || (ct.quotes = {}), o = Q[p.symbolId] || (Q[p.symbolId] = {}); if (p.bid != null) o.bid = Number(p.bid) / 1e5; if (p.ask != null) o.ask = Number(p.ask) / 1e5; o.t = Date.now(); }
         if (ct.spotsOn && String(p.symbolId) === String(ct.symbolId) && p.bid != null) { const bid = Number(p.bid) / 1e5, sd = flow.prevBid == null ? 0 : Math.sign(bid - flow.prevBid); flow.prevBid = bid; applyTick(bid, Number(p.timestamp) || Date.now(), 1, sd); fpTick(bid, Number(p.timestamp) || Date.now()); bookTick(bid); }
         return;
       }
@@ -1554,7 +1626,7 @@ function ctConnect(c) {
       const pend = m.clientMsgId && ct.pending.get(m.clientMsgId);
       if (!pend) return;
       clearTimeout(pend.to); ct.pending.delete(m.clientMsgId);
-      if (t === 2142 || t === 50) { const e = new Error(ctErrText(p)); e.code = p.errorCode; pend.rej(e); } else pend.res(p);
+      if (t === 2142 || t === 50 || t === 2132) { const e = new Error(ctErrText(p)); e.code = p.errorCode; pend.rej(e); } else pend.res(p);
     };
     ct.ws.onerror = () => { if (!opened) reject(new Error("Impossible de joindre le serveur cTrader (réseau, pare-feu ou bloqueur).")); };
     ct.ws.onclose = () => {
@@ -3616,7 +3688,7 @@ const pn = v => v > 0 ? "p" : v < 0 ? "n" : "";
 function rules() { try { return Object.assign({ maxLoss: 3, maxTrades: 5, riskPct: 1, capital: 10000 }, JSON.parse(store("rules") || "{}")); } catch { return { maxLoss: 3, maxTrades: 5, riskPct: 1, capital: 10000 }; } }
 
 /* ---------- navigation ---------- */
-const VIEWS = ["journee", "marche", "graphique", "scanner", "liquidite", "footprint", "fiabilite", "position", "journal", "performance", "risque", "reglages", "admin", "aide"];
+const VIEWS = ["journee", "marche", "graphique", "scanner", "liquidite", "footprint", "fiabilite", "robot", "position", "journal", "performance", "risque", "reglages", "admin", "aide"];
 function showView(v) {
   if (!VIEWS.includes(v) || (v === "admin" && ME.role !== "admin")) v = "journee";
   document.querySelectorAll(".view").forEach(s => s.hidden = s.dataset.view !== v);
@@ -3627,6 +3699,7 @@ function showView(v) {
   if (v === "footprint") setTimeout(() => { fpResize(); fpSummary(); }, 30);
   if (v === "journal") loadJournal();
   if (v === "performance") pfLoad();
+  if (v === "robot") { botForm(); botRender(); }
   if (v === "scanner") { scanChips(); if (!scan.at && !scan.busy) scanRun(); }
   if (v === "fiabilite") $("btInst").textContent = INSTR[inst].name;
   if (v === "admin") loadUsers();
@@ -4039,8 +4112,8 @@ async function ctSymbolIdFor(key) {
   if (!s) throw new Error("« " + want + " » introuvable sur ton compte cTrader.");
   return Number(s.symbolId);
 }
-async function fetchBars(key, tfId, n) {
-  const S = srcFor(key), tf = TFS.find(t => t.id === tfId), ms = TFMS[tfId];
+async function fetchBars(key, tfId, n, forceCt) {
+  const S = forceCt ? { kind: "ctrader" } : srcFor(key), tf = TFS.find(t => t.id === tfId), ms = TFMS[tfId];
   if (S.kind === "binance") {
     let out = [], end = null;
     for (let k = 0; k < 10 && out.length < n; k++) {
@@ -4481,7 +4554,419 @@ function toolsInit() {
   propForm(); propRefresh();
 }
 
+/* =====================================================================
+   Robot de trading : stratégies validées sur l'historique, exécution cTrader, compte démo d'abord
+   ===================================================================== */
+const BOT_TAG = "BOUSSOLE";
+const BOT_DEF = { tf: "5m", risk: 0.25, maxTrades: 3, maxLossR: 2, maxPos: 2, maxCost: 15, sessions: ["london", "overlap", "ny"], markets: [], strategies: ["vb", "orb", "vwap", "trend"], flow: true, allowLive: false, liveAt: 0 };
+const BOT_SESS = { asia: ["Asie", 22, 7], london: ["Londres", 7, 12], overlap: ["Londres et New York", 12, 16], ny: ["New York", 16, 21] };
+const BOT_MAX_RISK = 1; /* % du capital, plafond absolu par trade */
+const bot = { on: false, busy: false, lastBar: 0, lastMon: 0, timer: null, sym: new Map(), validating: false, wake: null };
+function botCfg() { try { return Object.assign({}, BOT_DEF, JSON.parse(store("bot-cfg") || "{}")); } catch { return Object.assign({}, BOT_DEF); } }
+const botJ = (k, d) => { try { const v = JSON.parse(store(k) || "null"); return v == null ? d : v; } catch { return d; } };
+const botPos = () => botJ("ct-bot-pos", {}), botSavePos = p => store("ct-bot-pos", JSON.stringify(p));
+function botLog(level, msg) {
+  const L = botJ("ct-bot-log", []); L.unshift({ t: Date.now(), level, msg }); store("ct-bot-log", JSON.stringify(L.slice(0, 200)));
+  if (typeof botRenderLog === "function") botRenderLog();
+}
+function botDay() { const d = botJ("ct-bot-day", null), k = dayKey(Date.now()); return d && d.k === k ? d : { k, n: 0, R: 0 }; }
+function botInSession(t, cfg) {
+  const h = new Date(t).getUTCHours() + new Date(t).getUTCMinutes() / 60;
+  return cfg.sessions.some(s => { const [, a, b] = BOT_SESS[s] || []; return a < b ? h >= a && h < b : h >= a || h < b; });
+}
+
+/* ----- indicateurs ----- */
+function adxSeries(arr, n = 14) {
+  const L = arr.length, out = new Array(L).fill(null); if (L < n * 2 + 2) return out;
+  let tr = 0, pdm = 0, ndm = 0, adx = null; const dxs = [];
+  for (let i = 1; i < L; i++) {
+    const b = arr[i], p = arr[i - 1], up = b.h - p.h, dn = p.l - b.l;
+    const t = Math.max(b.h - b.l, Math.abs(b.h - p.c), Math.abs(b.l - p.c)), pd = up > dn && up > 0 ? up : 0, nd = dn > up && dn > 0 ? dn : 0;
+    if (i <= n) { tr += t; pdm += pd; ndm += nd; if (i < n) continue; }
+    else { tr = tr - tr / n + t; pdm = pdm - pdm / n + pd; ndm = ndm - ndm / n + nd; }
+    const pdi = tr ? 100 * pdm / tr : 0, ndi = tr ? 100 * ndm / tr : 0, dx = pdi + ndi ? 100 * Math.abs(pdi - ndi) / (pdi + ndi) : 0;
+    if (adx == null) { dxs.push(dx); if (dxs.length === n) adx = dxs.reduce((a, c) => a + c, 0) / n; }
+    else adx = (adx * (n - 1) + dx) / n;
+    out[i] = adx;
+  }
+  return out;
+}
+
+/* ----- stratégies : chacune renvoie des signaux { i, dir, stop, target? } sur des bougies clôturées ----- */
+function sigVB(arr, A, p) { /* cassure de volatilité, d'après Larry Williams : ouverture du jour ± k × amplitude moyenne des 3 derniers jours */
+  const out = [], ranges = []; let day = null, open = 0, hi = 0, lo = 0, done = {};
+  for (let i = 1; i < arr.length; i++) {
+    const b = arr[i], d = Math.floor(b.t / 864e5);
+    if (d !== day) { if (day !== null) ranges.push(hi - lo); day = d; open = b.o; hi = b.h; lo = b.l; done = {}; continue; }
+    hi = Math.max(hi, b.h); lo = Math.min(lo, b.l);
+    if (ranges.length < 4 || !A[i]) continue;
+    const R = (ranges[ranges.length - 1] + ranges[ranges.length - 2] + ranges[ranges.length - 3]) / 3;
+    for (const dir of [1, -1]) {
+      if (done[dir]) continue; const lvl = open + dir * p.k * R, pc = arr[i - 1].c;
+      if (dir > 0 ? b.c > lvl && pc <= lvl : b.c < lvl && pc >= lvl) { done[dir] = 1; out.push({ i, dir, stop: b.c - dir * 1.5 * A[i] }); }
+    }
+  }
+  return out;
+}
+function sigORB(arr, A, p) { /* cassure du range des 30 premières minutes de Londres (7 h UTC) et de New York (13 h 30 UTC) */
+  const out = [], opens = [420, 810]; let st = null;
+  for (let i = 0; i < arr.length; i++) {
+    const b = arr[i], m = Math.floor((b.t % 864e5) / 6e4), d0 = b.t - (b.t % 864e5);
+    if (opens.includes(m)) st = { end: d0 + (m + 30) * 6e4, win: d0 + (m + 150) * 6e4, hi: -Infinity, lo: Infinity, done: false };
+    if (!st) continue;
+    if (b.t < st.end) { st.hi = Math.max(st.hi, b.h); st.lo = Math.min(st.lo, b.l); continue; }
+    if (st.done || b.t >= st.win || !A[i]) continue;
+    const w = st.hi - st.lo; if (!(w > 0.3 * A[i] && w < 5 * A[i])) { st.done = true; continue; }
+    const dir = b.c > st.hi ? 1 : b.c < st.lo ? -1 : 0;
+    if (dir) { st.done = true; out.push({ i, dir, stop: p.stop === "mid" ? (st.hi + st.lo) / 2 : dir > 0 ? st.lo : st.hi }); }
+  }
+  return out;
+}
+function sigVWAP(arr, A, p, ctx) { /* retour au VWAP du jour après un excès au-delà de m écarts-types, en marché sans tendance (ADX < 25) */
+  const out = [], adx = ctx.adx || (ctx.adx = adxSeries(arr)); let day = null, sw = 0, s1 = 0, s2 = 0, nb = 0, pv = null, ps = null;
+  for (let i = 0; i < arr.length; i++) {
+    const b = arr[i], d = Math.floor(b.t / 864e5);
+    if (d !== day) { day = d; sw = s1 = s2 = 0; nb = 0; pv = ps = null; }
+    const tp = (b.h + b.l + b.c) / 3, w = b.v > 0 ? b.v : 1; sw += w; s1 += w * tp; s2 += w * tp * tp; nb++;
+    const vw = s1 / sw, sd = Math.sqrt(Math.max(0, s2 / sw - vw * vw));
+    if (pv != null && nb > 12 && A[i] && sd > 0 && adx[i] != null && adx[i] < 25) {
+      const pc = arr[i - 1].c, win = arr.slice(Math.max(0, i - 2), i + 1);
+      if (pc < pv - p.m * ps && b.c > vw - p.m * sd && b.c < vw) out.push({ i, dir: 1, stop: Math.min(...win.map(x => x.l)) - 0.2 * A[i], target: vw });
+      else if (pc > pv + p.m * ps && b.c < vw + p.m * sd && b.c > vw) out.push({ i, dir: -1, stop: Math.max(...win.map(x => x.h)) + 0.2 * A[i], target: vw });
+    }
+    pv = vw; ps = sd;
+  }
+  return out;
+}
+function sigTrend(arr, A, p, ctx) { /* replis et cassures de l'application, dans le sens du score des unités de temps supérieures */
+  const out = [], msT = ctx.ms;
+  for (const s of findSignals(arr)) {
+    if (!A[s.i]) continue;
+    const tc = arr[s.i].t + msT; let sum = 0, w = 0;
+    for (const tf of ctx.higher || []) {
+      const b = ctx.data[tf.id], hi = upTo(b, tc - TFMS[tf.id]); if (hi < 212) continue;
+      const a = analyse(b.slice(Math.max(0, hi - 300), hi)); if (a) { sum += a.score * tf.w; w += tf.w; }
+    }
+    const g = w ? Math.round(sum / w * 100) : 0;
+    if (Math.abs(g) < p.minG || Math.sign(g) !== s.dir) continue;
+    const win = arr.slice(Math.max(0, s.i - 5), s.i + 1);
+    out.push({ i: s.i, dir: s.dir, stop: s.dir > 0 ? Math.min(...win.map(x => x.l)) - 0.2 * A[s.i] : Math.max(...win.map(x => x.h)) + 0.2 * A[s.i] });
+  }
+  return out;
+}
+const STRATS = {
+  vb: { name: "Cassure de volatilité", by: "d'après Larry Williams", fn: sigVB, mins: 240, grid: [{ k: 0.4, rr: 1.5 }, { k: 0.4, rr: 2 }, { k: 0.6, rr: 1.5 }, { k: 0.6, rr: 2 }] },
+  orb: { name: "Cassure du range d'ouverture", by: "Londres et New York", fn: sigORB, mins: 180, grid: [{ stop: "mid", rr: 1.5 }, { stop: "mid", rr: 2 }, { stop: "opp", rr: 1.5 }, { stop: "opp", rr: 2 }] },
+  vwap: { name: "Retour au VWAP", by: "excès de 2 écarts-types", fn: sigVWAP, mins: 120, grid: [{ m: 2 }, { m: 2.5 }] },
+  trend: { name: "Repli ou cassure dans la tendance", by: "signaux de l'application", fn: sigTrend, mins: 300, higher: true, grid: [{ minG: 15, rr: 1.5 }, { minG: 15, rr: 2 }, { minG: 40, rr: 1.5 }, { minG: 40, rr: 2 }] },
+};
+const paramText = (id, p) => id === "vb" ? "seuil " + fmt(p.k, 1) + " × amplitude, ratio 1 : " + fmt(p.rr, 1) : id === "orb" ? "stop " + (p.stop === "mid" ? "au milieu du range" : "de l'autre côté") + ", ratio 1 : " + fmt(p.rr, 1) : id === "vwap" ? "excès de " + fmt(p.m, 1) + " écarts-types, objectif VWAP" : "score ≥ " + p.minG + ", ratio 1 : " + fmt(p.rr, 1);
+
+/* Rejoue des signaux : un trade à la fois, coût déduit, stop prioritaire si stop et objectif sont touchés dans la même bougie */
+function botSim(arr, A, sigs, p, opt) {
+  const out = []; let busyTo = -1;
+  for (const s of sigs) {
+    if (s.i <= busyTo || s.i >= arr.length - 2 || !botInSession(arr[s.i].t, opt.cfg)) continue;
+    const e = arr[s.i].c, d = s.dir; let stop = s.stop;
+    if ((e - stop) * d < 0.3 * A[s.i]) stop = e - d * 0.3 * A[s.i];
+    const risk = Math.abs(e - stop), tgt = s.target != null ? s.target : e + d * (p.rr || 2) * risk;
+    if ((tgt - e) * d < risk * 0.9) continue;
+    if (opt.cost / risk * 100 > opt.cfg.maxCost) continue;
+    const c = opt.cost / risk, end = Math.min(arr.length - 1, s.i + opt.bars); let res = null;
+    for (let j = s.i + 1; j <= end; j++) {
+      const b = arr[j];
+      if (d > 0 ? b.l <= stop : b.h >= stop) { res = { j, R: -1 - c }; break; }
+      if (d > 0 ? b.h >= tgt : b.l <= tgt) { res = { j, R: Math.abs(tgt - e) / risk - c }; break; }
+    }
+    if (!res) { if (s.i + opt.bars > arr.length - 1) continue; res = { j: end, R: d * (arr[end].c - e) / risk - c }; }
+    out.push({ i: s.i, t: arr[s.i].t, dir: d, R: res.R }); busyTo = res.j;
+  }
+  return out;
+}
+
+/* ----- validation : période d'essai (70 %) puis vérification sur la période suivante, jamais utilisée pour choisir ----- */
+function botCostFor(key, px) {
+  const q = ct.quotes && bot.sidOf && bot.sidOf[key] != null ? ct.quotes[bot.sidOf[key]] : null;
+  if (q && q.bid && q.ask && q.ask > q.bid) return { v: q.ask - q.bid, src: "spread actuel" };
+  return { v: px * 0.00008, src: "estimation prudente (0,008 % du prix)" };
+}
+async function botValidate(keys) {
+  const cfg = botCfg(), tfId = cfg.tf, ms = TFMS[tfId], N = tfId === "5m" ? 6000 : 4000, out = botJ("ct-bot-val", {});
+  bot.validating = true; botRender();
+  try {
+    for (const key of keys) {
+      $("botValStatus").textContent = "Chargement de l'historique de " + instName(key) + "…";
+      try {
+        await botSubscribe([key]); await sleep(1500);
+        const idx = TFS.findIndex(t => t.id === tfId), higher = TFS.slice(idx), data = {};
+        for (const tf of higher) data[tf.id] = await fetchBars(key, tf.id, tf.id === tfId ? N : Math.ceil(N * ms / TFMS[tf.id]) + 320, true); /* toujours les prix du broker qui exécute */
+        const arr = data[tfId]; if (arr.length < 1500) throw new Error("historique trop court (" + arr.length + " bougies)");
+        $("botValStatus").textContent = "Test des stratégies sur " + instName(key) + "…"; await sleep(20);
+        const A = atrSeries(arr), split = Math.floor(arr.length * 0.7), cost = botCostFor(key, arr[arr.length - 1].c), res = {};
+        const ctx = { ms, data, higher };
+        for (const [id, S] of Object.entries(STRATS)) {
+          let best = null;
+          for (const p of S.grid) {
+            const T = botSim(arr, A, S.fn(arr, A, p, ctx), p, { cfg, cost: cost.v, bars: Math.round(S.mins * 6e4 / ms) });
+            const IS = rStats(T.filter(t => t.i < split)), OOS = rStats(T.filter(t => t.i >= split));
+            const score = IS.n >= 15 ? IS.avg : -9 + IS.n / 100;
+            if (!best || score > best.score) best = { p, IS, OOS, score };
+          }
+          const { IS, OOS } = best, slim = S => ({ n: S.n, avg: S.avg, win: S.win, pf: S.pf === Infinity ? 99 : S.pf, dd: S.dd });
+          const status = IS.n < 15 || OOS.n < 10 ? "peu" : IS.avg > 0.1 && OOS.avg > 0.1 && OOS.pf > 1.2 ? "ok" : "ko";
+          res[id] = { p: best.p, is: slim(IS), oos: slim(OOS), status };
+        }
+        out[key + "|" + tfId] = { t: Date.now(), from: arr[0].t, to: arr[arr.length - 1].t, bars: arr.length, cost: cost.v, costSrc: cost.src, res };
+        const ok = Object.entries(res).filter(([, r]) => r.status === "ok").map(([id]) => STRATS[id].name);
+        botLog(ok.length ? "ok" : "info", instName(key) + " : " + (ok.length ? "stratégie" + (ok.length > 1 ? "s" : "") + " validée" + (ok.length > 1 ? "s" : "") + " : " + ok.join(", ") : "aucune stratégie validée, le robot ne tradera pas ce marché") + ".");
+      } catch (e) { out[key + "|" + tfId] = { t: Date.now(), err: e.message }; botLog("err", instName(key) + " : validation impossible, " + e.message); }
+      store("ct-bot-val", JSON.stringify(out)); botRender();
+    }
+  } finally { bot.validating = false; $("botValStatus").textContent = ""; botRender(); }
+}
+const botValFor = (key, cfg) => (botJ("ct-bot-val", {})[key + "|" + (cfg || botCfg()).tf]) || null;
+/* Résultats réels du robot par marché et stratégie : une stratégie qui perd en réel est suspendue */
+const BOT_SUSPEND = { n: 8, avg: -0.2 };
+const botLive = () => botJ("ct-bot-live", {});
+function botLiveStat(key, id) { const r = botLive()[key + "|" + id] || []; return { n: r.length, avg: r.length ? r.reduce((a, b) => a + b, 0) / r.length : 0 }; }
+const botSuspended = (key, id) => { const s = botLiveStat(key, id); return s.n >= BOT_SUSPEND.n && s.avg < BOT_SUSPEND.avg; };
+const botActive = (key, cfg) => { const v = botValFor(key, cfg); return v && v.res ? Object.entries(v.res).filter(([id, r]) => r.status === "ok" && cfg.strategies.includes(id) && !botSuspended(key, id)) : []; };
+
+/* ----- connexion, cotations, détails des symboles ----- */
+async function botSubscribe(keys) {
+  await ctEnsure(true); bot.sidOf = bot.sidOf || {};
+  const ids = []; for (const k of keys) { try { const id = await ctSymbolIdFor(k); bot.sidOf[k] = id; ids.push(id); } catch {} }
+  if (ids.length) try { await ctSend(2127, { ctidTraderAccountId: ct.account, symbolId: ids }); } catch (e) { if (!/ALREADY/.test(e.message + (e.code || ""))) throw e; }
+}
+async function botSymbol(sid) {
+  if (bot.sym.has(sid)) return bot.sym.get(sid);
+  const r = await ctSend(2116, { ctidTraderAccountId: ct.account, symbolId: [sid] }), s = (r.symbol || [])[0]; if (!s) throw new Error("détails du symbole indisponibles");
+  const d = { digits: Number(s.digits), lot: Number(s.lotSize || 0), min: Number(s.minVolume || 0), max: Number(s.maxVolume || 0), step: Number(s.stepVolume || s.minVolume || 1) };
+  bot.sym.set(sid, d); return d;
+}
+
+/* ----- boucle du robot : à chaque bougie clôturée ----- */
+async function botTick() {
+  if (!bot.on || bot.busy) return;
+  const cfg = botCfg(), ms = TFMS[cfg.tf], barT = Math.floor(Date.now() / ms) * ms, now = Date.now();
+  const newBar = bot.lastBar !== barT && now - barT >= 6000, mon = now - bot.lastMon > 60000;
+  if (!newBar && !mon) return;
+  bot.busy = true;
+  try {
+    await botSubscribe(cfg.markets);
+    await botMonitor(); bot.lastMon = Date.now();
+    if (newBar) { bot.lastBar = barT; for (const key of cfg.markets) { if (!bot.on) break; try { await botCheck(key, cfg); } catch (e) { botLog("err", instName(key) + " : " + e.message); } } }
+  } catch (e) { botLog("err", "Cycle interrompu : " + e.message); }
+  finally { bot.busy = false; botRender(); }
+}
+async function botCheck(key, cfg) {
+  const act = botActive(key, cfg); if (!act.length) return;
+  const ms = TFMS[cfg.tf], idx = TFS.findIndex(t => t.id === cfg.tf), higher = TFS.slice(idx), data = {};
+  data[cfg.tf] = await fetchBars(key, cfg.tf, 1200, true);
+  if (act.some(([id]) => STRATS[id].higher)) for (const tf of higher.slice(1)) data[tf.id] = await fetchBars(key, tf.id, 320, true);
+  const arr = data[cfg.tf].filter(b => b.t + ms <= Date.now());
+  if (arr.length < 400) return;
+  const A = atrSeries(arr), L = arr.length - 1, ctx = { ms, data: Object.assign({}, data, { [cfg.tf]: arr }), higher };
+  const cands = [];
+  for (const [id, r] of act) for (const s of STRATS[id].fn(arr, A, r.p, ctx)) if (s.i === L) cands.push({ id, r, s });
+  if (!cands.length) return;
+  if (new Set(cands.map(c => c.s.dir)).size > 1) { botLog("info", instName(key) + " : signaux contradictoires (" + cands.map(c => STRATS[c.id].name).join(", ") + "), aucun trade."); return; }
+  const c = cands[0], dirTxt = c.s.dir > 0 ? "achat" : "vente", head = instName(key) + ", " + dirTxt + " (" + STRATS[c.id].name + ")";
+  const refuse = why => botLog("skip", head + " refusé : " + why + ".");
+  if (!botInSession(arr[L].t, cfg)) return refuse("hors des sessions choisies");
+  const day = botDay(); if (day.n >= cfg.maxTrades) return refuse("nombre maximal de trades du jour atteint (" + cfg.maxTrades + ")");
+  if (day.R <= -cfg.maxLossR) return refuse("perte maximale du jour atteinte (" + fmtR(day.R) + ")");
+  const P = typeof propEval === "function" ? propEval() : null;
+  if (P && P.breach) { botStop("Limite de la prop firm atteinte"); return refuse("limite de la prop firm atteinte"); }
+  const open = Object.values(botPos());
+  if (open.length >= cfg.maxPos) return refuse("déjà " + open.length + " position" + (open.length > 1 ? "s" : "") + " ouverte" + (open.length > 1 ? "s" : "") + " par le robot");
+  if (open.some(p => p.key === key)) return refuse("une position est déjà ouverte sur ce marché");
+  if (cfg.flow && key === inst && fp.agg && fp.agg.list.length > 1) {
+    const last = fp.agg.list[fp.agg.list.length - 2], against = (last.sig || []).find(s => !s.zone && s.side === -c.s.dir);
+    if (against) return refuse("le flux d'ordres contredit le signal (" + against.type.toLowerCase() + ")");
+  }
+  await botOrder(key, c, A[L], cfg, refuse, head, P);
+}
+async function botOrder(key, c, atr, cfg, refuse, head, P) {
+  const env = ctCfg().env;
+  if (env === "live" && !cfg.allowLive) { botStop("Compte réel non autorisé"); return refuse("le compte connecté est un compte réel, non autorisé pour le robot"); }
+  const sid = bot.sidOf[key] != null ? bot.sidOf[key] : await ctSymbolIdFor(key), S = await botSymbol(sid), q = (ct.quotes || {})[sid];
+  if (!q || !q.bid || !q.ask || Date.now() - q.t > 120000) return refuse("pas de cotation récente");
+  const A = { ctidTraderAccountId: ct.account }, T = (await ctSend(2121, A)).trader || {}, md = Number(T.moneyDigits != null ? T.moneyDigits : 2), bal = Number(T.balance || 0) / Math.pow(10, md);
+  const light = (ct.symbols || []).find(x => Number(x.symbolId) === sid);
+  if (light && T.depositAssetId != null && String(light.quoteAssetId) !== String(T.depositAssetId)) return refuse("la devise de cotation diffère de celle du compte, cas non géré par le robot");
+  const d = c.s.dir, e = d > 0 ? q.ask : q.bid, spread = q.ask - q.bid;
+  if ((e - c.s.stop) * d <= 0) return refuse("le prix a déjà dépassé le stop du signal");
+  let stop = c.s.stop; if ((e - stop) * d < 0.3 * atr) stop = e - d * 0.3 * atr;
+  const risk = Math.abs(e - stop);
+  const tgt = c.s.target != null ? c.s.target : e + d * (c.r.p.rr || 2) * risk;
+  if ((tgt - e) * d < risk * 0.9) return refuse("l'objectif est trop proche après le mouvement du prix");
+  if (spread / risk * 100 > cfg.maxCost) return refuse("écart de cotation trop élevé (" + fmt(spread / risk * 100, 0) + " % du risque)");
+  let money = bal * Math.min(BOT_MAX_RISK, Math.max(0.05, +cfg.risk)) / 100;
+  if (P) money = Math.min(money, Math.max(0, P.left) * 0.9);
+  if (!(money > 0)) return refuse("aucun risque disponible");
+  let vol = Math.floor(money / risk * 100 / S.step) * S.step;
+  if (S.max) vol = Math.min(vol, S.max);
+  if (vol < S.min) return refuse("la taille minimale du broker (" + fmt(S.min / 100, 2) + " unités) dépasserait le risque autorisé");
+  const tick = Math.pow(10, 5 - S.digits), rel = x => Math.max(tick, Math.round(Math.abs(x) * 1e5 / tick) * tick);
+  let r;
+  try {
+    r = await ctSend(2106, { ctidTraderAccountId: ct.account, symbolId: sid, orderType: 1, tradeSide: d > 0 ? 1 : 2, volume: vol, relativeStopLoss: rel(e - stop), relativeTakeProfit: rel(tgt - e), label: BOT_TAG, comment: c.id }, 20000);
+  } catch (err) {
+    const m = /ACCESS|PERMISSION|SCOPE|NOT_ALLOWED|TRADING_DISABLED/i.test((err.code || "") + " " + err.message) ? "ton jeton cTrader n'a pas le droit de trading (crée-en un avec l'accès « trading »)" : err.message;
+    botLog("err", head + " : ordre refusé par cTrader, " + m + "."); return;
+  }
+  const pid = (r.position && r.position.positionId) || (r.order && r.order.positionId) || (r.deal && r.deal.positionId);
+  const px = (r.position && Number(r.position.price)) || e, riskMoney = vol / 100 * risk;
+  const pos = botPos(); pos[pid || ("tmp" + Date.now())] = { key, sid, dir: d, entry: px, stop, tgt, risk: riskMoney, rDist: risk, vol, strat: c.id, t: Date.now() };
+  botSavePos(pos);
+  const day = botDay(); day.n++; store("ct-bot-day", JSON.stringify(day));
+  const msg = head + " exécuté : " + fmt(vol / 100, 2) + " unités à " + fmt(px, S.digits) + ", stop " + fmt(stop, S.digits) + ", objectif " + fmt(tgt, S.digits) + ", risque " + fmtMoney(riskMoney) + ".";
+  botLog("trade", msg); botNotify("Robot Boussole : " + head, msg);
+}
+/* Suivi des positions : détecte les fermetures (stop, objectif, manuelle), enregistre le trade dans le journal */
+async function botMonitor() {
+  const pos = botPos(), ids = Object.keys(pos); if (!ids.length) return;
+  const A = { ctidTraderAccountId: ct.account }, rec = await ctSend(2124, A, 20000), live = rec.position || [];
+  const liveIds = new Set(live.map(p => String(p.positionId)));
+  for (const id of ids) {
+    if (id.startsWith("tmp")) { const m = live.find(p => Number(p.tradeData && p.tradeData.symbolId) === pos[id].sid && (p.tradeData.label || "") === BOT_TAG && !pos[String(p.positionId)]); if (m) { pos[String(m.positionId)] = Object.assign(pos[id], { entry: Number(m.price) || pos[id].entry }); delete pos[id]; } continue; }
+    if (liveIds.has(id)) continue;
+    const P = pos[id]; let exit = null, money = null;
+    try {
+      const dl = await ctSend(2133, Object.assign({ fromTimestamp: P.t - 6e4, toTimestamp: Date.now(), maxRows: 500 }, A), 20000);
+      const cd = (dl.deal || []).filter(x => String(x.positionId) === id && x.closePositionDetail).pop();
+      if (cd) { exit = Number(cd.executionPrice); const c = cd.closePositionDetail, m = Number(c.moneyDigits != null ? c.moneyDigits : 2); money = (Number(c.grossProfit || 0) + Number(c.swap || 0) + Number(c.commission || 0)) / Math.pow(10, m); }
+    } catch {}
+    const R = money != null && P.risk ? money / P.risk : exit != null ? P.dir * (exit - P.entry) / P.rDist : 0;
+    try { await api("/api/trades", { method: "POST", json: { instrument: P.key, dir: P.dir, entry: P.entry, exit: exit != null ? exit : P.entry, sl0: P.stop, r: Math.round(R * 100) / 100, pnl: exit != null ? P.dir * (exit - P.entry) : 0, tf: botCfg().tf, source: "robot", opened_at: P.t, closed_at: Date.now(), setup: STRATS[P.strat] ? STRATS[P.strat].name : P.strat, notes: "Trade du robot Boussole" + (money != null ? ", résultat " + fmtMoney(money) : "") } }); } catch {}
+    const day = botDay(); day.R += R; store("ct-bot-day", JSON.stringify(day));
+    { const L = botLive(), k = P.key + "|" + P.strat; L[k] = (L[k] || []).concat([Math.round(R * 100) / 100]).slice(-30); store("ct-bot-live", JSON.stringify(L));
+      if (botSuspended(P.key, P.strat)) botLog("loss", instName(P.key) + " : la stratégie « " + (STRATS[P.strat] || {}).name + " » est suspendue, elle perd en réel (" + fmtR(botLiveStat(P.key, P.strat).avg) + " par trade sur " + botLiveStat(P.key, P.strat).n + " trades)."); }
+    delete pos[id];
+    botLog(R >= 0 ? "ok" : "loss", instName(P.key) + " : position fermée à " + (exit != null ? fmt(exit, (bot.sym.get(P.sid) || {}).digits || PD) : "un prix inconnu") + ", " + fmtR(R) + (money != null ? " (" + fmtMoney(money) + ")" : "") + ".");
+    botNotify("Robot Boussole : position fermée", instName(P.key) + " " + fmtR(R));
+    if (day.R <= -botCfg().maxLossR) botStop("Perte maximale du jour atteinte");
+  }
+  botSavePos(pos);
+}
+function botNotify(title, body) { try { if ("Notification" in window && Notification.permission === "granted") new Notification(title, { body }); } catch {} }
+
+/* ----- démarrage, arrêt, fermeture d'urgence ----- */
+async function botStart() {
+  const cfg = botCfg(), c = ctCfg();
+  if (!c.clientId || !c.clientSecret || !c.token) return botLog("err", "Renseigne tes accès cTrader dans les réglages avant de démarrer le robot.");
+  if (c.env === "live" && !cfg.allowLive) return botLog("err", "Le compte connecté est un compte réel. Le robot fonctionne d'abord en démo : passe en compte démo dans les réglages cTrader, ou autorise explicitement le compte réel.");
+  if (!cfg.markets.length) return botLog("err", "Choisis au moins un marché pour le robot.");
+  const stale = cfg.markets.filter(k => { const v = botValFor(k, cfg); return !v || v.err || Date.now() - v.t > 7 * 864e5; });
+  if (stale.length) { botLog("info", "Validation des stratégies avant démarrage (" + stale.map(instName).join(", ") + ")."); await botValidate(stale); }
+  const usable = cfg.markets.filter(k => botActive(k, cfg).length);
+  if (!usable.length) return botLog("err", "Aucune stratégie validée sur les marchés choisis : le robot ne démarre pas. C'est le comportement voulu, il ne trade que ce qui a prouvé un avantage.");
+  bot.on = true; store("ct-bot-on", "1"); bot.lastBar = Math.floor(Date.now() / TFMS[cfg.tf]) * TFMS[cfg.tf];
+  clearInterval(bot.timer); bot.timer = setInterval(botTick, 15000);
+  try { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission(); } catch {}
+  try { if (navigator.wakeLock) bot.wake = await navigator.wakeLock.request("screen"); } catch {}
+  botLog("ok", "Robot démarré sur " + (c.env === "live" ? "le compte RÉEL" : "le compte démo") + " : " + usable.map(instName).join(", ") + ", bougies de " + TFS.find(t => t.id === cfg.tf).name + ", risque " + fmt(+cfg.risk, 2) + " % par trade.");
+  botRender(); botTick();
+}
+function botStop(why) {
+  if (!bot.on && !why) return;
+  bot.on = false; store("ct-bot-on", "0"); clearInterval(bot.timer); bot.timer = null;
+  try { if (bot.wake) bot.wake.release(); } catch {} bot.wake = null;
+  botLog(why ? "loss" : "info", "Robot arrêté" + (why ? " : " + why : "") + ". Les positions ouvertes gardent leur stop et leur objectif chez le broker.");
+  botRender();
+}
+async function botCloseAll() {
+  if (!confirm("Fermer immédiatement toutes les positions ouvertes par le robot, au prix du marché ?")) return;
+  try {
+    await ctEnsure(true);
+    const rec = await ctSend(2124, { ctidTraderAccountId: ct.account }, 20000), mine = (rec.position || []).filter(p => (p.tradeData && p.tradeData.label) === BOT_TAG);
+    for (const p of mine) await ctSend(2111, { ctidTraderAccountId: ct.account, positionId: Number(p.positionId), volume: Number(p.tradeData.volume) }, 20000);
+    botLog("info", mine.length ? mine.length + " position" + (mine.length > 1 ? "s" : "") + " fermée" + (mine.length > 1 ? "s" : "") + " à la demande." : "Aucune position du robot à fermer.");
+    await sleep(1500); await botMonitor();
+  } catch (e) { botLog("err", "Fermeture impossible : " + e.message); }
+  botRender();
+}
+
+/* ----- interface ----- */
+function botRenderLog() {
+  const L = botJ("ct-bot-log", []), box = $("botLog"); if (!box) return;
+  box.innerHTML = L.length ? '<ul class="bot-log">' + L.slice(0, 60).map(x => '<li class="lv-' + x.level + '"><time>' + new Date(x.t).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) + "</time><span>" + esc(x.msg) + "</span></li>").join("") + "</ul>" : '<p class="muted">Aucune activité pour l\'instant.</p>';
+}
+function botRender() {
+  if (!$("botState")) return;
+  const cfg = botCfg(), c = ctCfg(), live = c.env === "live", day = botDay(), pos = botPos();
+  const st = $("botState");
+  st.dataset.level = bot.on ? (live ? "warn" : "ok") : "off";
+  st.innerHTML = bot.on
+    ? "<b>Robot actif sur " + (live ? "le compte RÉEL" : "le compte démo") + ".</b> Il analyse chaque bougie de " + TFS.find(t => t.id === cfg.tf).name + " clôturée. Garde cette page ouverte : le robot s'arrête si tu la fermes, mais les positions restent protégées par leur stop."
+    : "<b>Robot arrêté.</b> " + (live && !cfg.allowLive ? "Le compte cTrader connecté est un compte réel : le robot ne démarrera qu'en démo, sauf autorisation explicite." : "Choisis tes marchés, valide les stratégies, puis démarre.");
+  $("botStart").hidden = bot.on; $("botStop").hidden = !bot.on; $("botStart").disabled = bot.validating;
+  $("botToday").textContent = day.n + " trade" + (day.n > 1 ? "s" : "") + " aujourd'hui sur " + cfg.maxTrades + ", résultat " + fmtR(day.R) + ", " + Object.keys(pos).length + " position" + (Object.keys(pos).length > 1 ? "s" : "") + " ouverte" + (Object.keys(pos).length > 1 ? "s" : "") + ".";
+  /* validation */
+  const rows = [];
+  for (const key of cfg.markets) {
+    const v = botValFor(key, cfg);
+    if (!v) { rows.push("<tr><td><b>" + esc(instName(key)) + '</b></td><td colspan="5" class="muted">Pas encore validé</td></tr>'); continue; }
+    if (v.err) { rows.push("<tr><td><b>" + esc(instName(key)) + '</b></td><td colspan="5" class="n">' + esc(v.err) + "</td></tr>"); continue; }
+    Object.entries(v.res).forEach(([id, r], k) => {
+      const lv = botLiveStat(key, id), live = lv.n ? '<br><small class="' + pn(lv.avg) + '">En réel : ' + lv.n + " trade" + (lv.n > 1 ? "s" : "") + ", " + fmtR(lv.avg) + "</small>" : "";
+      const lab = (r.status === "ok" && botSuspended(key, id) ? '<span class="tag off">Suspendue (pertes en réel)</span>' : r.status === "ok" ? (cfg.strategies.includes(id) ? '<span class="tag ok">Validée</span>' : '<span class="tag">Validée, désactivée</span>') : r.status === "peu" ? '<span class="tag">Trop peu de signaux</span>' : '<span class="tag off">Rejetée</span>') + live;
+      const S = x => x.n ? x.n + " trades, " + fmtR(x.avg) + ", PF " + fmt(x.pf, 2) : "aucun trade";
+      rows.push("<tr>" + (k ? "<td></td>" : "<td><b>" + esc(instName(key)) + '</b><br><small class="muted">' + new Date(v.from).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) + " au " + new Date(v.to).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) + ", coût " + fmt(v.cost, instPD(key)) + "</small></td>") +
+        "<td>" + STRATS[id].name + '<br><small class="muted">' + STRATS[id].by + "</small></td><td><small>" + paramText(id, r.p) + "</small></td><td>" + S(r.is) + '</td><td class="' + pn(r.oos.avg) + '">' + S(r.oos) + "</td><td>" + lab + "</td></tr>");
+    });
+  }
+  $("botVal").innerHTML = cfg.markets.length ? '<div class="scroll"><table class="bot-tbl"><thead><tr><th>Marché</th><th>Stratégie</th><th>Réglage retenu</th><th>Période d\'essai</th><th>Vérification</th><th>Statut</th></tr></thead><tbody>' + rows.join("") + "</tbody></table></div>" : '<p class="muted">Choisis au moins un marché dans les réglages du robot.</p>';
+  $("botValBtn").disabled = bot.validating || bot.on;
+  /* positions */
+  const P = Object.entries(pos);
+  $("botPos").innerHTML = P.length ? "<ul class=\"bot-pos\">" + P.map(([, p]) => "<li><b>" + esc(instName(p.key)) + "</b> " + (p.dir > 0 ? '<span class="p">achat</span>' : '<span class="n">vente</span>') + " à " + fmt(p.entry, (bot.sym.get(p.sid) || {}).digits || PD) + ", stop " + fmt(p.stop, (bot.sym.get(p.sid) || {}).digits || PD) + ", objectif " + fmt(p.tgt, (bot.sym.get(p.sid) || {}).digits || PD) + '<br><small class="muted">' + (STRATS[p.strat] ? STRATS[p.strat].name : "") + ", risque " + fmtMoney(p.risk) + ", ouverte à " + new Date(p.t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) + "</small></li>").join("") + "</ul>" : '<p class="muted">Aucune position ouverte par le robot.</p>';
+  $("botLive").hidden = !live;
+  $("botLiveTxt").textContent = cfg.allowLive ? "Le robot est autorisé sur le compte réel depuis le " + new Date(cfg.liveAt).toLocaleDateString("fr-FR") + "." : "Le robot refuse de trader sur ce compte réel tant que tu ne l'as pas autorisé.";
+  $("botLiveBtn").textContent = cfg.allowLive ? "Retirer l'autorisation du compte réel" : "Autoriser le compte réel";
+  botRenderLog();
+}
+function botForm() {
+  const f = $("botForm"), cfg = botCfg();
+  const mk = scan.list.concat(cfg.markets.filter(k => !scan.list.includes(k)));
+  $("botMarkets").innerHTML = mk.map(k => '<label class="chk"><input type="checkbox" name="mk" value="' + esc(k) + '"' + (cfg.markets.includes(k) ? " checked" : "") + "> " + esc(instName(k)) + "</label>").join("") || '<span class="muted">Ajoute des marchés dans le Scanner.</span>';
+  $("botStrats").innerHTML = Object.entries(STRATS).map(([id, S]) => '<label class="chk"><input type="checkbox" name="st" value="' + id + '"' + (cfg.strategies.includes(id) ? " checked" : "") + "> " + S.name + ' <small class="muted">(' + S.by + ")</small></label>").join("");
+  $("botSess").innerHTML = Object.entries(BOT_SESS).map(([id, s]) => '<label class="chk"><input type="checkbox" name="se" value="' + id + '"' + (cfg.sessions.includes(id) ? " checked" : "") + "> " + s[0] + ' <small class="muted">(' + s[1] + " h à " + s[2] + " h UTC)</small></label>").join("");
+  f.elements.tf.value = cfg.tf; f.elements.risk.value = cfg.risk; f.elements.maxTrades.value = cfg.maxTrades; f.elements.maxLossR.value = cfg.maxLossR; f.elements.maxPos.value = cfg.maxPos; f.elements.maxCost.value = cfg.maxCost; f.elements.flow.checked = !!cfg.flow;
+}
+function robotInit() {
+  if (!$("botForm")) return;
+  const num = (v, d, lo, hi) => { const x = parseFloat(String(v).replace(",", ".")); return isFinite(x) ? Math.max(lo, Math.min(hi, x)) : d; };
+  botForm();
+  $("botForm").addEventListener("submit", e => {
+    e.preventDefault(); const f = e.target, old = botCfg();
+    const n = Object.assign({}, old, {
+      tf: f.elements.tf.value, risk: num(f.elements.risk.value, 0.25, 0.05, BOT_MAX_RISK), maxTrades: Math.round(num(f.elements.maxTrades.value, 3, 1, 20)), maxLossR: num(f.elements.maxLossR.value, 2, 0.5, 10),
+      maxPos: Math.round(num(f.elements.maxPos.value, 2, 1, 5)), maxCost: num(f.elements.maxCost.value, 15, 3, 50), flow: f.elements.flow.checked,
+      markets: [...f.querySelectorAll("input[name=mk]:checked")].map(x => x.value), strategies: [...f.querySelectorAll("input[name=st]:checked")].map(x => x.value), sessions: [...f.querySelectorAll("input[name=se]:checked")].map(x => x.value),
+    });
+    if (+n.risk > 0.5 && +n.risk > +old.risk && !confirm("Un risque de " + fmt(n.risk, 2) + " % par trade est élevé pour un robot. Confirmer ?")) return;
+    store("bot-cfg", JSON.stringify(n)); $("botMsg").textContent = "Enregistré."; setTimeout(() => $("botMsg").textContent = "", 2500); botForm(); botRender();
+  });
+  $("botStart").addEventListener("click", botStart);
+  $("botStop").addEventListener("click", () => botStop());
+  $("botClose").addEventListener("click", botCloseAll);
+  $("botValBtn").addEventListener("click", () => { const cfg = botCfg(); if (cfg.markets.length) botValidate(cfg.markets); });
+  $("botLiveBtn").addEventListener("click", () => {
+    const cfg = botCfg();
+    if (cfg.allowLive) { cfg.allowLive = false; cfg.liveAt = 0; store("bot-cfg", JSON.stringify(cfg)); botStop("autorisation du compte réel retirée"); botRender(); return; }
+    const t = prompt("Le robot va passer de vrais ordres avec ton argent. Les performances passées et en démo ne garantissent rien. Pour confirmer, écris : J'ACCEPTE LE RISQUE");
+    if ((t || "").trim().toUpperCase() !== "J'ACCEPTE LE RISQUE") return;
+    cfg.allowLive = true; cfg.liveAt = Date.now(); store("bot-cfg", JSON.stringify(cfg)); botLog("loss", "Compte réel autorisé pour le robot."); botRender();
+  });
+  botRender();
+  if (store("ct-bot-on") === "1") botLog("info", "Le robot était actif avant le rechargement de la page : il reste arrêté par sécurité. Redémarre-le si tu le souhaites.");
+  store("ct-bot-on", "0");
+}
+
 toolsInit();
+robotInit();
 initShell();
 </script>
 <script>

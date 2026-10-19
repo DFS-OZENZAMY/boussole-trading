@@ -15,6 +15,7 @@ Plateforme d'aide au trading pour les équipes de traders, protégée par mot de
 | **Footprint** | Volumes achetés et vendus au marché prix par prix dans chaque bougie (1 min à 1 h) : delta, delta cumulé, POC, déséquilibres en diagonale et empilés, enchères inachevées, signaux d'absorption et de divergence |
 | **Scanner** | Tous les marchés suivis classés par qualité de configuration (alignement des unités de temps, signal récent, zone proche, volatilité) |
 | **Fiabilité des signaux** | Rejeu historique des signaux de l'application : réussite, moyenne en R, profit factor, creux maximal, avec ou sans filtre de tendance |
+| **Robot** | Trading automatique sur cTrader (compte démo d'abord) : quatre stratégies de trading court validées sur l'historique avec le coût réel, garde-fous de risque, suspension automatique d'une stratégie perdante |
 | **Ma position** | Suivi en continu avec verdict (saine, vigilance, sortie conseillée) et propositions pour sécuriser les gains en déplaçant le stop |
 | **Journal** | Chaque position clôturée est enregistrée : statistiques, courbe des résultats en R, résultats par configuration, émotions, respect des règles, export CSV |
 | **Performance** | Analyse détaillée du journal (par configuration, émotion, session, jour, règles, rang dans la journée), enseignements automatiques et coach IA |
@@ -66,6 +67,10 @@ La page **Performance** propose un bilan rédigé par l'IA à partir du journal.
 | `OPENROUTER_API_KEY` | OpenRouter (des centaines de modèles) | `OPENROUTER_MODEL` | `anthropic/claude-sonnet-5.5` |
 
 En ligne de commande : `npx wrangler secret put OPENROUTER_API_KEY` (ou `ANTHROPIC_API_KEY`). Si les deux clés sont présentes, Anthropic est utilisé, sauf si la variable `COACH_PROVIDER` vaut `openrouter`. Les identifiants de modèles OpenRouter sont listés sur openrouter.ai/models. Un bilan par utilisateur toutes les 10 minutes au maximum.
+
+### Robot de trading
+
+Le robot tourne dans le navigateur (page ouverte) et passe des ordres au marché sur cTrader, avec stop et objectif posés chez le broker. Il nécessite un jeton cTrader avec le droit de trading. Stratégies : cassure de volatilité (d'après Larry Williams), cassure du range d'ouverture de Londres et New York, retour au VWAP, replis et cassures de tendance de l'application. Chaque stratégie est validée par marché : choix du réglage sur 70 % de l'historique, vérification sur les 30 % suivants, coût réel déduit, au moins 10 trades et +0,1 R en vérification. Protections : compte démo obligatoire sauf autorisation écrite, risque 0,25 % par défaut (1 % maximum), trades et perte maximale par jour, positions limitées, mode prop firm, suspension d'une stratégie qui perd en réel, fermeture d'urgence. Les trades fermés sont enregistrés dans le journal (source « robot »).
 
 ### Mode prop firm
 
