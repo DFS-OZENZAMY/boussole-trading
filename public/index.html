@@ -1076,7 +1076,7 @@ svg.eq .zero{stroke:var(--line);stroke-width:1}
     <p>La vue Liquidité montre le carnet d'ordres : les ordres d'achat et de vente posés à l'avance, qui attendent qu'un prix soit atteint. Chaque colonne est une photo du carnet (toutes les 0,25, 1 ou 3 secondes selon la vitesse choisie), les plus récentes à droite. Plus une case est claire, plus il y a d'ordres en attente à ce prix ; une bande claire et continue est un « mur » d'ordres qui tient dans le temps. La ligne blanche suit le prix. Avec Binance, les ronds verts et rouges sont les transactions exécutées au marché, acheteurs agressifs en vert et vendeurs agressifs en rouge, leur taille suit le volume échangé. Avec cTrader, qui ne transmet pas les transactions, les ronds montrent l'activité en ticks : vert quand le prix a surtout monté pendant l'intervalle, rouge quand il a surtout baissé, et leur taille suit le nombre de variations. La case « Transactions » les masque ou les affiche.</p>
     <p>À droite de la carte, le carnet actuel : les barres vertes sont les ordres d'achat sous le prix, les rouges les ordres de vente au-dessus. Survole la carte pour lire la quantité exacte à un prix et à un instant donnés. Utilise − et + pour élargir ou resserrer la plage de prix (Ctrl ou Maj et la molette fonctionnent aussi), le curseur Contraste pour faire ressortir les petits ordres, et Figer pour étudier la carte sans qu'elle défile (l'enregistrement continue en arrière-plan).</p>
     <p>Comment s'en servir : un mur qui tient au-dessus du prix peut freiner la hausse, un mur qui tient en dessous peut soutenir le prix. Quand le prix arrive sur un mur, regarde s'il est absorbé (les transactions s'accumulent et le mur fond, souvent avant une cassure) ou s'il tient (le prix rebondit). Un mur qui disparaît juste avant d'être touché était peut-être là pour impressionner : c'est pourquoi la liste des murs indique depuis combien de temps chacun est présent.</p>
-    <p>Limites : avec Binance, c'est le carnet réel de PAXG/USDT, un marché beaucoup plus petit que l'or. Avec cTrader, c'est la profondeur fournie par ton broker, qui reflète les prix de ses fournisseurs de liquidité et non un carnet central. Son échelle compte peu de niveaux, se déplace à chaque tick et grossit avec la distance au prix : la carte la moyenne et l'adoucit pour la rendre lisible, ajuste la plage de prix à sa profondeur, et le tableau « Niveaux du broker » remplace la liste des murs en signalant les niveaux nettement plus ou moins fournis que leur moyenne de la dernière minute. Dans les deux cas, la carte indique où regarder, pas ce que fera le marché. Pour le vrai carnet de l'or et du Nasdaq, il faut les contrats à terme du CME (GC et NQ) et un abonnement de données payant.</p>
+    <p>Limites : avec Binance, c'est le carnet réel de PAXG/USDT, un marché beaucoup plus petit que l'or. Avec cTrader, c'est la profondeur fournie par ton broker, qui reflète les prix de ses fournisseurs de liquidité et non un carnet central. Son échelle compte peu de niveaux, se déplace à chaque tick et grossit avec la distance au prix : la carte dessine chaque niveau comme un trait net à son prix exact, ajuste la plage de prix à sa profondeur, et le tableau « Niveaux du broker » remplace la liste des murs en signalant les niveaux nettement plus ou moins fournis que leur moyenne de la dernière minute. Dans les deux cas, la carte indique où regarder, pas ce que fera le marché. Pour le vrai carnet de l'or et du Nasdaq, il faut les contrats à terme du CME (GC et NQ) et un abonnement de données payant.</p>
   </details>
   <details>
     <summary>Comment lire le footprint</summary>
@@ -2372,9 +2372,8 @@ function bookSample() {
   const mid = (bb + ba) / 2;
   let lvB = null, lvA = null;
   if (book.kind === "ctrader" && book.acc && book.acc.n) {
-    /* cTrader : quantité moyenne à chaque prix pendant la colonne, l'échelle du broker bougeant à chaque tick */
+    /* cTrader : l'échelle est enregistrée telle quelle (traits nets) ; la moyenne par rang sert seulement au tableau des niveaux */
     const A = book.acc, n = A.n;
-    b = new Map([...A.b].map(([p, q]) => [p, q / n])); a = new Map([...A.a].map(([p, q]) => [p, q / n]));
     lvB = A.lb.map(q => q / n); lvA = A.la.map(q => q / n);
     bookAccReset();
   }
@@ -2485,19 +2484,6 @@ function hmDraw() {
       if (r >= 0 && r < gr) G[r * gw + x] += Math.abs(Q[k]);
     }
   }
-  if (book.kind === "ctrader") {
-    /* l'échelle du broker bouge à chaque tick : on adoucit entre prix voisins et entre colonnes voisines */
-    const S2 = new Float32Array(G.length);
-    for (let r = 0; r < gr; r++) for (let x = 0; x < gw; x++) {
-      let v = 0, w = 0;
-      for (let dr = -1; dr <= 1; dr++) for (let dx = -1; dx <= 0; dx++) {
-        const rr = r + dr, xx = x + dx; if (rr < 0 || rr >= gr || xx < 0) continue;
-        const k = (dr === 0 ? 2 : 1) * (dx === 0 ? 2 : 1); v += G[rr * gw + xx] * k; w += k;
-      }
-      S2[r * gw + x] = v / w;
-    }
-    G.set(S2);
-  }
   const nz = []; for (let k = 0; k < G.length; k++) if (G[k] > 0) nz.push(G[k]);
   if (nz.length) { nz.sort((a, b) => a - b); const q = nz[Math.min(nz.length - 1, Math.floor(nz.length * 0.97))]; book.ref = book.ref ? book.ref * 0.75 + q * 0.25 : q; }
   if (!hmGridCv) hmGridCv = document.createElement("canvas");
@@ -2513,9 +2499,29 @@ function hmDraw() {
     }
   }
   gx.putImageData(img, 0, 0);
-  c.imageSmoothingEnabled = book.kind === "ctrader"; c.imageSmoothingQuality = "high";
-  c.drawImage(hmGridCv, 0, 0, gw, gr, 0, 0, heatW, hh);
-
+  c.imageSmoothingEnabled = false;
+  if (book.kind !== "ctrader") c.drawImage(hmGridCv, 0, 0, gw, gr, 0, 0, heatW, hh);
+  else {
+    /* cTrader : chaque rang de l'échelle du broker (1er niveau acheteur, 2e…) forme une ligne continue et nette,
+       en marches quand le prix bouge ; la couleur suit la quantité */
+    const sz = []; for (const col of cols) for (let k = 0; k < col.Q.length; k++) sz.push(Math.abs(col.Q[k]));
+    sz.sort((a, b) => a - b);
+    const rq = sz.length ? sz[Math.min(sz.length - 1, Math.floor(sz.length * 0.95))] || 1 : 1, lh = Math.max(2, Math.min(4, Math.round(hh / 140)));
+    const color = q => { const v = Math.min(1, Math.abs(q) / rq * book.gain), li = Math.round(70 + Math.pow(v, 0.6) * 185) * 3; return "rgb(" + HM_LUT[li] + "," + HM_LUT[li + 1] + "," + HM_LUT[li + 2] + ")"; };
+    const ranks = Math.min(12, Math.max(...cols.map(col => Math.max(col.nb, col.P.length - col.nb))));
+    for (const side of [1, -1]) for (let r = 0; r < ranks; r++) {
+      let py = null;
+      for (let ci = 0; ci < cols.length; ci++) {
+        const col = cols[ci], k = side > 0 ? r : col.nb + r;
+        if (side > 0 ? r >= col.nb : k >= col.P.length) { py = null; continue; }
+        const x = (off + ci) * cw, y = Math.round(Y(col.P[k]) - lh / 2);
+        c.fillStyle = color(col.Q[k]);
+        c.fillRect(x, y, cw, lh);
+        if (py != null && py !== y) c.fillRect(x, Math.min(py, y), Math.max(1, lh - 1), Math.abs(py - y) + lh); /* marche verticale */
+        py = y;
+      }
+    }
+  }
   /* lignes de prix, prix suivi et transactions */
   c.save(); c.beginPath(); c.rect(0, 0, heatW, hh); c.clip();
   const ls = niceStep(span / 8), dec = Math.max(PD, decOf(step));
