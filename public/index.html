@@ -1073,7 +1073,7 @@ svg.eq .zero{stroke:var(--line);stroke-width:1}
   </details>
   <details>
     <summary>Comment lire la carte de liquidité</summary>
-    <p>La vue Liquidité montre le carnet d'ordres : les ordres d'achat et de vente posés à l'avance, qui attendent qu'un prix soit atteint. Chaque colonne est une photo du carnet (toutes les 0,25, 1 ou 3 secondes selon la vitesse choisie), les plus récentes à droite. Plus une case est claire, plus il y a d'ordres en attente à ce prix ; une bande claire et continue est un « mur » d'ordres qui tient dans le temps. La ligne blanche suit le prix. Avec Binance, les ronds verts et rouges sont les transactions exécutées au marché, acheteurs agressifs en vert et vendeurs agressifs en rouge, leur taille suit le volume échangé.</p>
+    <p>La vue Liquidité montre le carnet d'ordres : les ordres d'achat et de vente posés à l'avance, qui attendent qu'un prix soit atteint. Chaque colonne est une photo du carnet (toutes les 0,25, 1 ou 3 secondes selon la vitesse choisie), les plus récentes à droite. Plus une case est claire, plus il y a d'ordres en attente à ce prix ; une bande claire et continue est un « mur » d'ordres qui tient dans le temps. La ligne blanche suit le prix. Avec Binance, les ronds verts et rouges sont les transactions exécutées au marché, acheteurs agressifs en vert et vendeurs agressifs en rouge, leur taille suit le volume échangé. Avec cTrader, qui ne transmet pas les transactions, les ronds montrent l'activité en ticks : vert quand le prix a surtout monté pendant l'intervalle, rouge quand il a surtout baissé, et leur taille suit le nombre de variations. La case « Transactions » les masque ou les affiche.</p>
     <p>À droite de la carte, le carnet actuel : les barres vertes sont les ordres d'achat sous le prix, les rouges les ordres de vente au-dessus. Survole la carte pour lire la quantité exacte à un prix et à un instant donnés. Utilise − et + pour élargir ou resserrer la plage de prix (Ctrl ou Maj et la molette fonctionnent aussi), le curseur Contraste pour faire ressortir les petits ordres, et Figer pour étudier la carte sans qu'elle défile (l'enregistrement continue en arrière-plan).</p>
     <p>Comment s'en servir : un mur qui tient au-dessus du prix peut freiner la hausse, un mur qui tient en dessous peut soutenir le prix. Quand le prix arrive sur un mur, regarde s'il est absorbé (les transactions s'accumulent et le mur fond, souvent avant une cassure) ou s'il tient (le prix rebondit). Un mur qui disparaît juste avant d'être touché était peut-être là pour impressionner : c'est pourquoi la liste des murs indique depuis combien de temps chacun est présent.</p>
     <p>Limites : avec Binance, c'est le carnet réel de PAXG/USDT, un marché beaucoup plus petit que l'or. Avec cTrader, c'est la profondeur fournie par ton broker, qui reflète les prix de ses fournisseurs de liquidité et non un carnet central. Son échelle compte peu de niveaux, se déplace à chaque tick et grossit avec la distance au prix : la carte la moyenne et l'adoucit pour la rendre lisible, ajuste la plage de prix à sa profondeur, et le tableau « Niveaux du broker » remplace la liste des murs en signalant les niveaux nettement plus ou moins fournis que leur moyenne de la dernière minute. Dans les deux cas, la carte indique où regarder, pas ce que fera le marché. Pour le vrai carnet de l'or et du Nasdaq, il faut les contrats à terme du CME (GC et NQ) et un abonnement de données payant.</p>
@@ -1546,7 +1546,7 @@ function ctConnect(c) {
       const t = m.payloadType, p = m.payload || {};
       if (t === 51) return;
       if (t === 2131) { /* événement de prix */
-        if (ct.spotsOn && String(p.symbolId) === String(ct.symbolId) && p.bid != null) { const bid = Number(p.bid) / 1e5, sd = flow.prevBid == null ? 0 : Math.sign(bid - flow.prevBid); flow.prevBid = bid; applyTick(bid, Number(p.timestamp) || Date.now(), 1, sd); fpTick(bid, Number(p.timestamp) || Date.now()); }
+        if (ct.spotsOn && String(p.symbolId) === String(ct.symbolId) && p.bid != null) { const bid = Number(p.bid) / 1e5, sd = flow.prevBid == null ? 0 : Math.sign(bid - flow.prevBid); flow.prevBid = bid; applyTick(bid, Number(p.timestamp) || Date.now(), 1, sd); fpTick(bid, Number(p.timestamp) || Date.now()); bookTick(bid); }
         return;
       }
       if (t === 2155) { bookCtEvent(p); return; } /* profondeur de marché */
@@ -2238,7 +2238,7 @@ function bookStop() {
   if (book.ws) { book.ws.onclose = null; try { book.ws.close(); } catch {} book.ws = null; }
   if (ct.depthOn && ct.ws && ct.ws.readyState === 1) ctSend(2158, { ctidTraderAccountId: ct.account, symbolId: [Number(ct.symbolId)] }, 10000).catch(() => {});
   ct.depthOn = false;
-  book.kind = null; book.bids.clear(); book.asks.clear(); book.ctq.clear(); book.buf = []; book.synced = false; book.trade = null;
+  book.kind = null; book.bids.clear(); book.asks.clear(); book.ctq.clear(); book.buf = []; book.synced = false; book.trade = null; book.prevTick = null;
   book.state = "off"; book.err = "";
   hmDraw();
 }
@@ -2308,6 +2308,16 @@ function bookBnApply(e, g) {
   for (const [p, q] of e.a) { const x = +p, y = +q; if (y > 0) book.asks.set(x, y); else book.asks.delete(x); }
   if (book.state !== "on") { book.state = "on"; book.err = ""; }
   return true;
+}
+/* cTrader ne transmet pas les transactions : on compte les variations du prix acheteur (hausse = achat, baisse = vente) */
+function bookTick(p) {
+  if (book.kind !== "ctrader" || !(p > 0)) return;
+  if (book.prevTick == null) { book.prevTick = p; return; }
+  const d = Math.sign(p - book.prevTick); if (!d) return;
+  book.prevTick = p;
+  const t = book.trade || (book.trade = { buy: 0, sell: 0, pv: 0, last: p });
+  if (d > 0) t.buy += 1; else t.sell += 1;
+  t.pv += p; t.last = p;
 }
 function bookTrade(p, q, side) {
   if (book.kind !== "binance" || !(q > 0)) return;
@@ -2514,16 +2524,16 @@ function hmDraw() {
   c.lineWidth = 1.6; c.strokeStyle = "rgba(255,255,255,.92)"; c.lineJoin = "round"; c.beginPath();
   cols.forEach((col, ci) => { const x = (off + ci) * cw + cw / 2, y = Y(col.last != null ? col.last : col.mid); ci ? c.lineTo(x, y) : c.moveTo(x, y); });
   c.stroke();
-  if (book.kind === "binance" && $("hmTrades").checked) {
+  if ((book.kind === "binance" || book.kind === "ctrader") && $("hmTrades").checked) {
     const vols = cols.map(k => k.buy + k.sell).filter(v => v > 0).sort((a, b) => a - b);
     if (vols.length) {
       const vref = vols[Math.min(vols.length - 1, Math.floor(vols.length * 0.9))];
       cols.forEach((col, ci) => {
         const v = col.buy + col.sell; if (!v || col.vw == null) return;
-        const rad = Math.max(1.8, Math.min(18, Math.sqrt(v / vref) * 7)), up = col.buy >= col.sell;
+        const rad = Math.max(3, Math.min(22, Math.sqrt(v / vref) * 10)), up = col.buy >= col.sell;
         c.beginPath(); c.arc((off + ci) * cw + cw / 2, Y(col.vw), rad, 0, Math.PI * 2);
-        c.fillStyle = up ? "rgba(70,195,131,.5)" : "rgba(238,107,87,.5)"; c.fill();
-        c.lineWidth = 1; c.strokeStyle = up ? "#46C383" : "#EE6B57"; c.stroke();
+        c.fillStyle = up ? "rgba(70,195,131,.62)" : "rgba(238,107,87,.62)"; c.fill();
+        c.lineWidth = 1.5; c.strokeStyle = up ? "#7BE0AE" : "#FF9A88"; c.stroke();
       });
     }
   }
@@ -2586,7 +2596,9 @@ function hmTip() {
     if (!col) { tip.hidden = true; return; }
     const s = d.G[r * d.gw + x];
     html = "<b>" + fmt(p0, d.dec) + " à " + fmt(p1, d.dec) + "</b><br>" + hmClock(col.t, true) + " : " + (s ? hmSize(s) + " " + u + " en attente" : "aucun ordre");
-    if (col.buy + col.sell > 0) html += "<br>Échangé : " + hmSize(col.buy) + " " + u + " acheté, " + hmSize(col.sell) + " " + u + " vendu";
+    if (col.buy + col.sell > 0) html += book.kind === "ctrader"
+      ? "<br>Activité : " + col.buy + " tick" + (col.buy > 1 ? "s" : "") + " à la hausse, " + col.sell + " à la baisse"
+      : "<br>Échangé : " + hmSize(col.buy) + " " + u + " acheté, " + hmSize(col.sell) + " " + u + " vendu";
   }
   tip.innerHTML = html; tip.hidden = false;
   const wrap = $("hmWrap").getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
@@ -2603,7 +2615,10 @@ function hmSummary() {
     : S.kind === "ctrader"
     ? "Profondeur fournie par ton broker via cTrader. L'or et le Nasdaq en CFD n'ont pas de carnet central : ces quantités sont les prix proposés par les fournisseurs de liquidité du broker, souvent arrondies ou fixes. Lis-les comme un indice, pas comme les ordres réels du marché."
     : "";
-  $("hmKeyTrades").hidden = S.kind !== "binance";
+  $("hmKeyTrades").hidden = S.kind !== "binance" && S.kind !== "ctrader";
+  $("hmKeyTrades").innerHTML = S.kind === "ctrader"
+    ? '<i style="background:#46C383"></i>Prix en hausse <i style="background:#EE6B57;margin-left:6px"></i>Prix en baisse (activité en ticks, cTrader ne transmet pas les transactions)'
+    : '<i style="background:#46C383"></i>Achats au marché <i style="background:#EE6B57;margin-left:6px"></i>Ventes au marché';
   let end = book.cols.length;
   if (book.paused && book.pauseCol) { const k = book.cols.indexOf(book.pauseCol); if (k >= 0) end = k + 1; }
   const cur = book.cols[end - 1];
