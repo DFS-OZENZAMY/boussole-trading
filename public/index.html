@@ -195,6 +195,10 @@ details p,details li{max-width:78ch;color:var(--mute)}
 .chart.big{height:min(82vh,960px)}
 @media (max-width:560px){.chart{height:380px}.chart.big{height:78vh}}
 .chart-err{padding:20px;color:var(--bear)}
+.pine{margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+.pine h3{margin:0 0 6px;font-size:14px}
+.pine textarea{width:100%;box-sizing:border-box;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:8px;resize:vertical}
+.btnlink{display:inline-block;padding:6px 12px;font-size:13px;border:1px solid var(--line);border-radius:8px;text-decoration:none}
 .plan{display:flex;flex-direction:column;gap:10px}
 .plan label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--mute)}
 .plan label input,.plan label select{color:var(--ink);width:100%}
@@ -705,7 +709,18 @@ button.danger{background:var(--bear);border-color:var(--bear);color:#fff}
           <button type="button" class="ghost" id="bigChart" aria-pressed="false">Agrandir le graphique</button>
         </div>
         <div class="chart" id="tvchart" hidden></div>
-        <p class="muted" id="tvNote" hidden><span id="tvName">Données XAU/USD de Pepperstone</span>, en direct via TradingView. Ce graphique est intégré tel quel : les signaux et les lignes Entrée, SL et TP de l'application ne peuvent pas y être tracés. Reporte les niveaux du plan à la main avec l'outil « Position longue » ou « Position courte » de TradingView.</p>
+        <p class="muted" id="tvNote" hidden><span id="tvName">Données XAU/USD de Pepperstone</span>, en direct via TradingView. Ce graphique est intégré tel quel : l'application ne peut pas y tracer directement. Clique sur « Placer sur le graphique » dans une entrée proposée : un script Pine avec Entrée, SL et TP est généré et copié, il te reste à le coller dans l'éditeur Pine de TradingView.</p>
+        <div class="pine" id="pinePanel" hidden>
+          <h3>Script Pine généré</h3>
+          <p class="muted" id="pineMsg"></p>
+          <textarea id="pineCode" readonly rows="8" spellcheck="false" aria-label="Script Pine généré"></textarea>
+          <div class="chart-tools">
+            <button type="button" id="pineCopy">Copier le script</button>
+            <a class="ghost btnlink" id="pineOpen" href="https://www.tradingview.com/chart/" target="_blank" rel="noopener">Ouvrir TradingView</a>
+          </div>
+          <p class="muted">Dans TradingView : ouvre l'éditeur Pine (en bas du graphique), colle le script, puis « Ajouter au graphique ». Entrée, SL et TP apparaissent sous forme de zones, comme l'outil « Position ».</p>
+        </div>
+
       </div>
       <div class="plan">
         <div class="seg" id="dirs" role="group" aria-label="Sens du trade" style="align-self:flex-start">
@@ -3584,6 +3599,7 @@ function buildProposals(arr) {
     const p = P[+b.dataset.k];
     setDir(p.dir); $("entry").value = p.entry.toFixed(PD); $("sl").value = p.sl.toFixed(PD); $("tp").value = p.tp.toFixed(PD);
     $("planMsg").textContent = "« " + p.name + " » placé sur le graphique."; savePlan(); drawLines();
+    pinePlace(p);
   }));
   if ($("showSig").checked) for (const p of P)
     propLines.push(cs.createPriceLine({ price: p.entry, color: css("--gold"), lineStyle: 1, lineWidth: 1, axisLabelVisible: false, title: p.short }));
@@ -3593,6 +3609,59 @@ function maybeRefreshSignals(arr) {
   const key = chartTf + "|" + arr[arr.length - 2].t + "|" + lastBiasKey + "|" + $("rr").value;
   if (key !== sigKey) { sigKey = key; refreshSignals(arr); }
 }
+
+
+/* ---------- Script Pine généré : Entrée / SL / TP sur le vrai graphique TradingView ---------- */
+function pineStr(t) { return String(t).replace(/[\\"\r\n]/g, " "); }
+function pineScript(p, name) {
+  const d = p.dir > 0, t0 = Date.now(), rrv = Math.abs(p.tp - p.entry) / (Math.abs(p.entry - p.sl) || 1);
+  const f = v => Number(v).toFixed(PD), nm = pineStr(name), side = d ? "Achat" : "Vente", title = /^(Achat|Vente)/.test(nm) ? nm : side + " " + nm;
+  return [
+    "//@version=6",
+    "// Généré par Boussole Trading : " + title + " (" + new Date(t0).toLocaleString("fr-FR") + ")",
+    "// À ajouter sur le graphique " + INSTR[inst].tv + ". Outil d'aide à la lecture du marché, pas un conseil en investissement.",
+    'indicator("Boussole : ' + title + '", shorttitle = "Boussole", overlay = true, max_lines_count = 10, max_boxes_count = 10, max_labels_count = 10)',
+    "",
+    "entry = " + f(p.entry),
+    "sl    = " + f(p.sl),
+    "tp    = " + f(p.tp),
+    "t0    = " + t0 + " // heure de génération (ms)",
+    "colBull = #1F8A55",
+    "colBear = #C2412F",
+    "",
+    "var box zoneTp = box.new(t0, math.max(entry, tp), t0 + 2592000000, math.min(entry, tp), xloc = xloc.bar_time, extend = extend.right, bgcolor = color.new(colBull, 85), border_color = color.new(colBull, 100))",
+    "var box zoneSl = box.new(t0, math.max(entry, sl), t0 + 2592000000, math.min(entry, sl), xloc = xloc.bar_time, extend = extend.right, bgcolor = color.new(colBear, 85), border_color = color.new(colBear, 100))",
+    "var line lnE = line.new(t0, entry, t0 + 1, entry, xloc = xloc.bar_time, extend = extend.right, color = color.new(#D9B44A, 0), width = 2)",
+    "var line lnS = line.new(t0, sl, t0 + 1, sl, xloc = xloc.bar_time, extend = extend.right, color = colBear, width = 1)",
+    "var line lnT = line.new(t0, tp, t0 + 1, tp, xloc = xloc.bar_time, extend = extend.right, color = colBull, width = 1)",
+    "",
+    "var label lbE = na",
+    "var label lbS = na",
+    "var label lbT = na",
+    "if barstate.islast",
+    "    label.delete(lbE)",
+    "    label.delete(lbS)",
+    "    label.delete(lbT)",
+    '    lbE := label.new(bar_index + 3, entry, "Entrée " + str.tostring(entry, format.mintick), style = label.style_label_left, color = #D9B44A, textcolor = color.black)',
+    '    lbS := label.new(bar_index + 3, sl, "SL " + str.tostring(sl, format.mintick), style = label.style_label_left, color = colBear, textcolor = color.white)',
+    '    lbT := label.new(bar_index + 3, tp, "TP " + str.tostring(tp, format.mintick) + "  (1 : ' + rrv.toFixed(1) + ')", style = label.style_label_left, color = colBull, textcolor = color.white)',
+    ""
+  ].join("\n");
+}
+async function pinePlace(p) {
+  const code = pineScript(p, p.name), msg = $("pineMsg");
+  $("pineCode").value = code; $("pinePanel").hidden = false;
+  let copied = false;
+  try { await navigator.clipboard.writeText(code); copied = true; }
+  catch { try { $("pineCode").select(); copied = document.execCommand("copy"); } catch {} }
+  const src = curSrc();
+  msg.textContent = (copied ? "Script copié dans le presse-papiers. " : "Copie automatique impossible : utilise « Copier le script ». ") +
+    (src.kind === "ctrader" ? "" : "Niveaux calculés sur la source « " + src.label + " » : ils peuvent différer un peu du prix Pepperstone du graphique TradingView.");
+}
+$("pineCopy").addEventListener("click", async () => {
+  const c = $("pineCode"); try { await navigator.clipboard.writeText(c.value); $("pineMsg").textContent = "Script copié dans le presse-papiers."; }
+  catch { c.select(); try { document.execCommand("copy"); $("pineMsg").textContent = "Script copié."; } catch {} }
+});
 
 /* ---------- Graphique TradingView (données Pepperstone) ---------- */
 const TV_INT = { "5m": "5", "15m": "15", "30m": "30", "1h": "60", "4h": "240" };
