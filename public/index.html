@@ -502,6 +502,11 @@ svg.eq .zero{stroke:var(--line);stroke-width:1}
 @media (max-width:980px){.pf-grid{grid-template-columns:minmax(0,1fr)}}
 .pf-grid>.card{min-width:0;overflow-x:auto}
 #propForm .form-grid>label{min-width:0}
+#psForm .form-grid>label{min-width:0}
+#psForm select,#psForm input:not([type=checkbox]){width:100%;min-width:0;max-width:100%}
+.ps-tbl tr.best td{background:color-mix(in srgb,var(--gold) 12%,transparent)}
+.ps-fan{width:100%;height:auto;display:block}
+.ps-fan text{fill:var(--mute);font-size:11px}
 #propForm select,#propForm input:not([type=checkbox]){width:100%;min-width:0;max-width:100%}
 .pf-grid table,.pf-t{width:100%;border-collapse:collapse;font-size:14px}
 .pf-grid th{text-align:left;font-size:12px;color:var(--mute);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line)}
@@ -584,6 +589,7 @@ button.danger{background:var(--bear);border-color:var(--bear);color:#fff}
       <div class="sep"></div>
       <button type="button" data-view="journal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11M9 8h6"/></svg><span>Journal</span></button>
       <button type="button" data-view="performance"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9"/><path d="M12 3v9l6 4"/></svg><span>Performance</span></button>
+      <button type="button" data-view="simulateur"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17c3-1 4-9 7-9s3 8 6 8 3-6 5-7"/><path d="M3 21h18"/></svg><span>Simulateur de challenge</span></button>
       <button type="button" data-view="risque"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6z"/><path d="M9 12h6"/></svg><span>Calcul du risque</span></button>
       <div class="sep"></div>
       <button type="button" data-view="reglages"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span>Réglages</span></button>
@@ -879,6 +885,32 @@ button.danger{background:var(--bear);border-color:var(--bear);color:#fff}
         <div id="bsOut"></div>
       </div>
 
+      <div class="view" id="view-simulateur" data-view="simulateur" hidden>
+        <div class="vh"><div><h2>Simulateur de challenge</h2><p>Combien de chances as-tu de réussir ton challenge, et de le perdre ? Boussole rejoue ton journal des milliers de fois avec les règles de ta prop firm (perte journalière, perte maximale, objectif, jours minimum), puis cherche le risque par trade qui maximise tes chances sans griller le compte.</p></div></div>
+        <section class="card">
+          <p class="muted" id="psJ" style="margin-top:0"></p>
+          <form id="psForm">
+            <div class="form-grid">
+              <label>Résultats utilisés <select name="src"><option value="journal">Mon journal (résultats en R)</option><option value="manual">Taux de réussite et ratio saisis</option></select></label>
+              <label data-man hidden>Taux de réussite (%) <input name="win" inputmode="decimal" value="45"></label>
+              <label data-man hidden>Gain moyen d'un trade gagnant (R) <input name="rr" inputmode="decimal" value="2"></label>
+              <label>Risque par trade (% du capital) <input name="risk" inputmode="decimal"></label>
+              <label>Trades par jour <input name="tpd" inputmode="decimal"></label>
+              <label>Durée maximale (jours de trading) <input name="days" inputmode="numeric"></label>
+              <label>Perte journalière maximale (%) <input name="daily" inputmode="decimal"></label>
+              <label>Calculée sur <select name="dailyBase"><option value="initial">le capital initial</option><option value="start">le solde de début de journée</option></select></label>
+              <label>Perte maximale totale (%) <input name="maxLoss" inputmode="decimal"></label>
+              <label>Type de perte maximale <select name="maxType"><option value="static">Fixe (sous le capital initial)</option><option value="trailing">Suiveuse (sous le plus haut solde)</option></select></label>
+              <label>Objectif de profit (%) <input name="target" inputmode="decimal" placeholder="Aucun (compte financé)"></label>
+              <label>Jours de trading minimum <input name="minDays" inputmode="numeric" placeholder="Aucun"></label>
+              <label>Je m'arrête pour la journée après une perte de (%) <input name="stopDay" inputmode="decimal" placeholder="Aucune règle perso"></label>
+            </div>
+            <div class="row-btns"><button type="submit" id="psGo">Lancer la simulation</button><button type="button" class="ghost" id="psRules">Reprendre mes règles prop firm</button><span class="msg" id="psMsg"></span></div>
+          </form>
+        </section>
+        <div id="psOut"></div>
+      </div>
+
       <div class="view" id="view-performance" data-view="performance" hidden>
         <div class="vh"><div><h2>Performance</h2><p>Ce que disent tes trades : où tu gagnes, où tu perds, et dans quelles conditions. Tous les résultats sont en R, c'est-à-dire en multiples du montant risqué.</p></div>
           <div class="tools">
@@ -1146,6 +1178,11 @@ button.danger{background:var(--bear);border-color:var(--bear);color:#fff}
     <summary>Les meilleures stratégies et les entrées à venir</summary>
     <p>La rubrique Meilleures stratégies teste les quatre stratégies du robot sur le marché affiché, dans les cinq unités de temps (5 min à 4 h). Pour chacune, le meilleur réglage est choisi sur la partie ancienne de l'historique puis vérifié sur la partie récente, jamais utilisée pour choisir. Les combinaisons gagnantes sur les deux périodes sont marquées « Validée » ; celles qui ont trop peu de trades sont « À confirmer » ; les autres sont rejetées et n'affichent aucune entrée.</p>
     <p>Pour les combinaisons retenues, Boussole calcule les <b>entrées à venir</b> : le niveau où la stratégie donnerait un signal si le prix l'atteint (cassure, repli sur l'EMA 20, retour au VWAP, range d'ouverture), avec le stop et l'objectif. Ce ne sont pas des prévisions. Le bouton Graphique trace l'entrée, le stop et l'objectif sur le graphique, « Tout afficher » trace toutes les entrées, et Pine génère le script TradingView. Les résultats passés ne garantissent pas les résultats futurs.</p>
+  </details>
+  <details>
+    <summary>Le simulateur de challenge</summary>
+    <p>Le simulateur rejoue ton journal des milliers de fois : à chaque trade, il tire au hasard un de tes résultats en R, applique le risque choisi et vérifie les règles de ta prop firm (perte journalière, perte maximale fixe ou suiveuse, objectif, jours minimum). Il indique tes chances de réussir, de perdre le compte (par la perte journalière ou la perte maximale), le temps nécessaire et le creux à prévoir.</p>
+    <p>Le tableau des risques compare plusieurs niveaux et recommande celui qui maximise les chances de réussir avec au plus 10 % de risque de perdre le compte. Le test de résistance montre ce qui se passe si ton avantage réel est plus faible que dans ton journal, et l'intervalle donne la probabilité que ton espérance soit vraiment positive. La règle « Je m'arrête après une perte de » mesure l'effet d'un plafond de perte personnel, plus strict que celui de la prop firm. Ce sont des estimations fondées sur ton passé : elles ne garantissent rien.</p>
   </details>
   <details>
     <summary>Le scanner multi-instruments</summary>
@@ -3781,7 +3818,7 @@ const pn = v => v > 0 ? "p" : v < 0 ? "n" : "";
 function rules() { try { return Object.assign({ maxLoss: 3, maxTrades: 5, riskPct: 1, capital: 10000 }, JSON.parse(store("rules") || "{}")); } catch { return { maxLoss: 3, maxTrades: 5, riskPct: 1, capital: 10000 }; } }
 
 /* ---------- navigation ---------- */
-const VIEWS = ["journee", "marche", "graphique", "scanner", "liquidite", "footprint", "fiabilite", "strategies", "robot", "position", "journal", "performance", "risque", "reglages", "admin", "aide"];
+const VIEWS = ["journee", "marche", "graphique", "scanner", "liquidite", "footprint", "fiabilite", "strategies", "robot", "position", "journal", "performance", "risque", "simulateur", "reglages", "admin", "aide"];
 function showView(v) {
   if (!VIEWS.includes(v) || (v === "admin" && ME.role !== "admin")) v = "journee";
   document.querySelectorAll(".view").forEach(s => s.hidden = s.dataset.view !== v);
@@ -3798,6 +3835,7 @@ function showView(v) {
   if (v === "strategies") { $("bsInst").textContent = INSTR[inst].name; bsRender(); }
   if (v === "admin") loadUsers();
   if (v === "risque") calcRisk();
+  if (v === "simulateur") psOpen();
   if (v === "journee") { renderDay(); loadCalendar(); }
   window.scrollTo(0, 0);
 }
@@ -4537,6 +4575,155 @@ function bsRender() {
   if ($("bsNone")) $("bsNone").addEventListener("click", bsClear);
 }
 
+/* =====================  Simulateur de challenge (Monte Carlo)  ===================== */
+const PS = { init: false, rs: [], tpd: null, loaded: false, busy: false };
+function psRng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const psMed = a => { if (!a.length) return null; const b = a.slice().sort((x, y) => x - y), m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
+const psPct = (sorted, q) => sorted.length ? sorted[Math.min(sorted.length - 1, Math.max(0, Math.floor(q * sorted.length)))] : null;
+/* Un trade = un tirage dans les résultats en R. Le capital vaut 100 : un risque de 0,5 signifie 0,5 % du capital initial. */
+function psSim(o) {
+  const rnd = psRng(o.seed), n = o.n, D = Math.max(o.days, o.minDays || 0), cap = 100;
+  const mean = o.rs ? o.rs.reduce((a, b) => a + b, 0) / o.rs.length : o.win * o.rr - (1 - o.win);
+  const rs = o.rs ? o.rs.map(r => r - o.shrink * mean) : null, wR = o.rr - o.shrink * mean, lR = -1 - o.shrink * mean;
+  const sample = () => rs ? rs[Math.floor(rnd() * rs.length)] : (rnd() < o.win ? wR : lR);
+  const mat = o.bands ? new Float32Array((D + 1) * n) : null, fl = Math.floor(o.tpd), fr = o.tpd - fl;
+  let pass = 0, dBust = 0, tBust = 0, timeout = 0; const passDays = [], dds = [], ends = [];
+  for (let s = 0; s < n; s++) {
+    let bal = cap, peak = cap, st = 0, passDay = 0, maxDD = 0;
+    if (mat) mat[s] = bal;
+    for (let d = 1; d <= D; d++) {
+      if (st === 0) {
+        const dayStart = bal, lim = o.dailyBase === "start" ? o.daily / 100 * dayStart : o.daily, k = fl + (rnd() < fr ? 1 : 0);
+        for (let t = 0; t < k; t++) {
+          bal += o.risk * sample();
+          if (bal > peak) peak = bal;
+          if (peak - bal > maxDD) maxDD = peak - bal;
+          if (o.daily > 0 && dayStart - bal >= lim - 1e-9) { st = 2; break; }
+          if (bal <= (o.maxType === "trailing" ? peak - o.maxLoss : cap - o.maxLoss) + 1e-9) { st = 3; break; }
+          if (o.target > 0 && bal >= cap + o.target - 1e-9) { st = 1; passDay = Math.max(d, o.minDays || 0); break; }
+          if (o.stopDay > 0 && dayStart - bal >= o.stopDay - 1e-9) break;
+        }
+      }
+      if (mat) mat[d * n + s] = bal;
+    }
+    if (st === 1) { pass++; passDays.push(passDay); } else if (st === 2) dBust++; else if (st === 3) tBust++; else timeout++;
+    dds.push(maxDD); ends.push(bal);
+  }
+  const out = { n, D, pass: pass / n, dBust: dBust / n, tBust: tBust / n, timeout: timeout / n, passDay: psMed(passDays), ddP95: psPct(dds.slice().sort((a, b) => a - b), 0.95), endMed: psMed(ends) - cap, profit: ends.filter(e => e > cap).length / n };
+  out.bust = out.dBust + out.tBust;
+  if (mat) {
+    out.bands = []; const col = new Float32Array(n);
+    for (let d = 0; d <= D; d++) { for (let s = 0; s < n; s++) col[s] = mat[d * n + s]; const b = col.slice().sort(); out.bands.push([b[Math.floor(0.1 * (n - 1))], b[Math.floor(0.5 * (n - 1))], b[Math.floor(0.9 * (n - 1))]]); }
+    out.paths = []; for (let s = 0; s < Math.min(25, n); s++) { const pth = []; for (let d = 0; d <= D; d++) pth.push(mat[d * n + s]); out.paths.push(pth); }
+  }
+  return out;
+}
+/* Probabilité que l'espérance réelle (en R) soit positive, par rééchantillonnage du journal. */
+function psEdge(rs, seed) {
+  const rnd = psRng(seed), n = rs.length, B = 2000, means = [];
+  for (let b = 0; b < B; b++) { let s = 0; for (let i = 0; i < n; i++) s += rs[Math.floor(rnd() * n)]; means.push(s / n); }
+  means.sort((a, b) => a - b);
+  return { pos: means.filter(m => m > 0).length / B, lo: means[Math.floor(0.05 * B)], hi: means[Math.floor(0.95 * B)] };
+}
+function psRecommend(rows, hasTarget) {
+  const okRows = rows.filter(r => r.bust <= (hasTarget ? 0.10 : 0.05));
+  if (!okRows.length) return rows.reduce((a, b) => b.bust < a.bust ? b : a);
+  return okRows.reduce((a, b) => (hasTarget ? b.pass > a.pass || (b.pass === a.pass && b.bust < a.bust) : b.endMed > a.endMed) ? b : a);
+}
+const psNum = (v, d) => { const x = parseFloat(String(v == null ? "" : v).replace(",", ".")); return isFinite(x) ? x : d; };
+function psToggle() { const man = $("psForm").elements.src.value === "manual"; $("psForm").querySelectorAll("[data-man]").forEach(l => l.hidden = !man); }
+function psFill(force) {
+  const f = $("psForm"), c = propCfg(), set = (k, v) => { if (f.elements[k]) f.elements[k].value = v == null ? "" : v; };
+  set("risk", c.capital ? Math.round(c.risk / c.capital * 10000) / 100 : 0.5); set("daily", c.daily); set("dailyBase", c.dailyBase); set("maxLoss", c.maxLoss); set("maxType", c.maxType);
+  set("target", c.target); set("minDays", c.minDays || ""); if (force || !f.elements.days.value) set("days", 30);
+  if (PS.tpd && (force || !f.elements.tpd.value)) set("tpd", PS.tpd); else if (!f.elements.tpd.value) set("tpd", 2);
+  psToggle();
+}
+async function psLoad() {
+  try {
+    const T = await api("/api/trades?from=0");
+    PS.rs = T.filter(t => t.r != null && isFinite(+t.r)).map(t => +t.r);
+    const per = {}; for (const t of T) if (t.r != null) { const k = dayKey(t.closed_at); per[k] = (per[k] || 0) + 1; }
+    PS.tpd = psMed(Object.values(per)); PS.loaded = true;
+  } catch { PS.rs = []; PS.loaded = false; }
+  const rs = PS.rs, w = rs.filter(r => r > 0).length;
+  $("psJ").textContent = rs.length ? "Ton journal : " + rs.length + " trades, " + fmt(w / rs.length * 100, 0) + " % gagnants, " + fmtR(rs.reduce((a, b) => a + b, 0) / rs.length) + " par trade en moyenne" + (rs.length < 30 ? ". Attention : moins de 30 trades, l'estimation de ton avantage est fragile." : ".") : "Ton journal ne contient pas encore de trades avec un résultat en R : saisis un taux de réussite et un ratio, ou enregistre des trades.";
+  if (PS.tpd && !PS.init) { $("psForm").elements.tpd.value = PS.tpd; }
+}
+async function psOpen() {
+  if (!PS.init) { psFill(); PS.init = true; }
+  await psLoad();
+  if (!PS.rs.length && $("psForm").elements.src.value === "journal") { $("psForm").elements.src.value = "manual"; psToggle(); }
+}
+async function psRun() {
+  if (PS.busy) return;
+  const f = $("psForm").elements, msg = $("psMsg"), say = t => { msg.textContent = t; };
+  const base = { src: f.src.value, risk: psNum(f.risk.value, 0.5), tpd: psNum(f.tpd.value, 2), days: Math.min(250, Math.max(3, Math.round(psNum(f.days.value, 30)))), daily: psNum(f.daily.value, 0), dailyBase: f.dailyBase.value, maxLoss: psNum(f.maxLoss.value, 10), maxType: f.maxType.value, target: psNum(f.target.value, 0), minDays: Math.round(psNum(f.minDays.value, 0)), stopDay: psNum(f.stopDay.value, 0) };
+  if (!(base.risk > 0 && base.risk <= 10)) return say("Le risque par trade doit être compris entre 0 et 10 %.");
+  if (!(base.tpd > 0 && base.tpd <= 50)) return say("Le nombre de trades par jour doit être compris entre 0 et 50.");
+  if (!(base.maxLoss > 0)) return say("Indique la perte maximale totale.");
+  if (base.src === "journal") { if (PS.rs.length < 15) return say("Il faut au moins 15 trades avec un résultat en R dans le journal (tu en as " + PS.rs.length + "). Choisis « Taux de réussite et ratio saisis »."); base.rs = PS.rs; }
+  else { base.win = psNum(f.win.value, 45) / 100; base.rr = psNum(f.rr.value, 2); if (!(base.win > 0 && base.win < 1 && base.rr > 0)) return say("Taux de réussite entre 0 et 100 %, gain moyen supérieur à 0."); }
+  PS.busy = true; $("psGo").disabled = true; say("Simulation en cours…"); await sleep(30);
+  try {
+    const seed = (Date.now() ^ 0x5bd1e995) >>> 0, hasT = base.target > 0;
+    const main = psSim(Object.assign({}, base, { n: 4000, shrink: 0, seed, bands: true }));
+    const risks = [0.25, 0.5, 0.75, 1, 1.5, 2]; if (!risks.includes(base.risk)) risks.push(base.risk); risks.sort((a, b) => a - b);
+    const sweep = risks.map((r, i) => Object.assign({ risk: r }, psSim(Object.assign({}, base, { risk: r, n: 2000, shrink: 0, seed: seed + 11 + i }))));
+    const stress = [0, 0.25, 0.5, 1].map((k, i) => Object.assign({ k }, psSim(Object.assign({}, base, { n: 2000, shrink: k, seed: seed + 101 + i }))));
+    const edge = base.rs ? psEdge(base.rs, seed + 7) : null;
+    PS.res = { base, main, sweep, stress, edge, best: psRecommend(sweep, hasT), hasT, at: Date.now() };
+    say(""); psRender();
+  } catch (e) { say("Erreur : " + e.message); }
+  finally { PS.busy = false; $("psGo").disabled = false; }
+}
+function psFan(R) {
+  const m = R.main, D = m.D, W = 800, H = 260, padL = 44, padB = 22, lines = [];
+  const b = R.base, floor = b.maxType === "static" ? 100 - b.maxLoss : null, tgt = b.target > 0 ? 100 + b.target : null;
+  let lo = Math.min(...m.bands.map(x => x[0]), floor == null ? 100 - b.maxLoss : floor, 100), hi = Math.max(...m.bands.map(x => x[2]), tgt || 100);
+  const sp = (hi - lo) || 1; lo -= sp * 0.05; hi += sp * 0.05;
+  const X = d => padL + d / D * (W - padL - 8), Y = v => 8 + (1 - (v - lo) / (hi - lo)) * (H - 8 - padB);
+  const path = (arr, f) => arr.map((v, d) => (d ? "L" : "M") + X(d).toFixed(1) + " " + Y(f(v)).toFixed(1)).join(" ");
+  const band = m.bands.map((v, d) => (d ? "L" : "M") + X(d).toFixed(1) + " " + Y(v[2]).toFixed(1)).join(" ") + " " + m.bands.slice().reverse().map((v, i) => "L" + X(D - i).toFixed(1) + " " + Y(v[0]).toFixed(1)).join(" ") + " Z";
+  const hl = (v, col, t) => '<line x1="' + padL + '" x2="' + (W - 8) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '" style="stroke:' + col + ';stroke-dasharray:5 4;stroke-width:1.2"/><text x="' + (padL - 4) + '" y="' + (Y(v) + 4).toFixed(1) + '" text-anchor="end">' + t + "</text>";
+  let g = '<svg class="ps-fan" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Évolution possible du solde">';
+  g += '<path d="' + band + '" style="fill:var(--gold);opacity:.16"/>';
+  for (const pth of m.paths) g += '<path d="' + path(pth, v => v) + '" style="fill:none;stroke:var(--mute);opacity:.28;stroke-width:1" vector-effect="non-scaling-stroke"/>';
+  g += '<path d="' + path(m.bands, v => v[1]) + '" style="fill:none;stroke:var(--gold);stroke-width:2.2" vector-effect="non-scaling-stroke"/>';
+  g += hl(100, "var(--mute)", "100");
+  if (tgt) g += hl(tgt, "var(--bull)", fmt(tgt, 0));
+  if (floor != null) g += hl(floor, "var(--bear)", fmt(floor, 0));
+  for (const t of [0, 0.5, 1]) g += '<text x="' + X(t * D).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle">jour ' + Math.round(t * D) + "</text>";
+  return g + "</svg>";
+}
+function psRender() {
+  const R = PS.res; if (!R) return; const m = R.main, b = R.base, pc = x => fmt(x * 100, 0) + " %";
+  const lvl = R.hasT ? (m.bust <= 0.10 && m.pass >= 0.5 ? "ok" : m.bust >= 0.25 || m.pass < 0.25 ? "stop" : "warn") : (m.bust <= 0.05 ? "ok" : m.bust >= 0.25 ? "stop" : "warn");
+  const why = (m.dBust || m.tBust) ? " (" + pc(m.dBust) + " par la perte journalière, " + pc(m.tBust) + " par la perte maximale)" : "";
+  const head = R.hasT
+    ? "Avec " + fmt(b.risk, 2) + " % de risque par trade, tu as " + pc(m.pass) + " de chances de réussir en " + b.days + " jours et " + pc(m.bust) + " de risque de perdre le compte" + why + "."
+    : "Avec " + fmt(b.risk, 2) + " % de risque par trade, ton compte survit " + b.days + " jours dans " + pc(1 - m.bust) + " des cas ; le risque de le perdre est de " + pc(m.bust) + why + ".";
+  const best = R.best, same = Math.abs(best.risk - b.risk) < 1e-9;
+  const tiles = [
+    [R.hasT ? "Réussite" : "Survie", pc(R.hasT ? m.pass : 1 - m.bust), R.hasT ? (m.pass >= 0.5 ? "p" : "n") : (m.bust <= 0.05 ? "p" : "n")],
+    ["Compte perdu", pc(m.bust), m.bust <= 0.1 ? "p" : "n"],
+    [R.hasT ? "Jours pour réussir (médiane)" : "Résultat médian", R.hasT ? (m.passDay != null ? Math.round(m.passDay) + " jours" : "—") : (m.endMed > 0 ? "+" : "") + fmt(m.endMed, 1) + " %", R.hasT ? "" : pn(m.endMed)],
+    ["Creux typique (1 cas sur 20 pire)", "−" + fmt(m.ddP95, 1) + " %", ""],
+  ];
+  let h = '<p class="prop-msg" data-level="' + lvl + '">' + esc(head) + "</p>";
+  h += '<div class="stats">' + tiles.map(t => '<div class="stat"><span>' + t[0] + '</span><b class="' + t[2] + '">' + t[1] + "</b></div>").join("") + "</div>";
+  h += '<section class="card"><h3>Ce que ton solde peut devenir</h3>' + psFan(R) + '<p class="muted">Solde en % du capital initial. Ligne dorée : cas médian. Zone dorée : 8 parcours sur 10. Traits gris : 25 parcours tirés au hasard.' + (b.maxType === "trailing" ? " La perte maximale suiveuse suit ton plus haut solde, elle n'est donc pas tracée." : "") + "</p></section>";
+  h += '<section class="card"><div class="card-h"><h3>Quel risque par trade ?</h3><span class="muted" style="margin:0">' + (same ? "Ton réglage est le meilleur testé" : "Meilleur compromis : " + fmt(best.risk, 2) + " %") + "</span></div>" +
+    '<div class="scroll"><table class="sc-tbl ps-tbl"><thead><tr><th>Risque</th><th>' + (R.hasT ? "Réussite" : "Survie") + "</th><th>Compte perdu</th><th>" + (R.hasT ? "Jours médians" : "Résultat médian") + '</th><th></th></tr></thead><tbody>' +
+    R.sweep.map(r => '<tr class="' + (r === best ? "best" : "") + '"><td><b>' + fmt(r.risk, 2) + " %</b>" + (Math.abs(r.risk - b.risk) < 1e-9 ? ' <small class="muted">ton réglage</small>' : "") + "</td><td>" + pc(R.hasT ? r.pass : 1 - r.bust) + '</td><td class="' + (r.bust <= 0.1 ? "p" : "n") + '">' + pc(r.bust) + "</td><td>" + (R.hasT ? (r.passDay != null ? Math.round(r.passDay) + " j" : "—") : (r.endMed > 0 ? "+" : "") + fmt(r.endMed, 1) + " %") + "</td><td>" + (r === best ? '<span class="tag ok">Recommandé</span>' : "") + "</td></tr>").join("") + "</tbody></table></div>" +
+    '<p class="muted">Recommandé : ' + (R.hasT ? "le risque qui maximise les chances de réussir avec au plus 10 % de risque de perdre le compte" : "le meilleur résultat médian avec au plus 5 % de risque de perdre le compte") + ". Si aucun risque ne respecte cette limite, c'est le plus prudent qui est proposé.</p></section>";
+  h += '<section class="card"><h3>Et si ton avantage réel était plus faible ?</h3><div class="scroll"><table class="sc-tbl"><thead><tr><th>Hypothèse</th><th>' + (R.hasT ? "Réussite" : "Survie") + "</th><th>Compte perdu</th></tr></thead><tbody>" +
+    R.stress.map(r => "<tr><td>" + (r.k === 0 ? "Ton journal tel quel" : r.k === 1 ? "Aucun avantage (espérance nulle)" : "Avantage réduit de " + fmt(r.k * 100, 0) + " %") + "</td><td>" + pc(R.hasT ? r.pass : 1 - r.bust) + '</td><td class="' + (r.bust <= 0.1 ? "p" : "n") + '">' + pc(r.bust) + "</td></tr>").join("") + "</tbody></table></div>" +
+    (R.edge ? '<p class="muted">Avec ' + b.rs.length + " trades, ton espérance réelle est comprise entre " + fmtR(R.edge.lo) + " et " + fmtR(R.edge.hi) + " par trade (intervalle à 90 %), et la probabilité qu'elle soit positive est de <b>" + pc(R.edge.pos) + "</b>. Plus ton journal est long, plus ces chiffres sont fiables.</p>" : "") + "</section>";
+  h += '<details style="margin:12px 0"><summary>Hypothèses du simulateur</summary><ul class="muted"><li>Chaque trade est tiré au hasard dans tes résultats, indépendamment des autres : les séries de pertes liées à tes émotions ou au marché ne sont pas modélisées.</li><li>Le risque par trade est fixe, en pourcentage du capital initial, sans frais ni glissement supplémentaires.</li><li>Les limites sont vérifiées après chaque trade sur le solde clôturé. Les prop firms surveillent souvent l\'équité en direct, positions ouvertes comprises : leurs règles peuvent être plus strictes.</li><li>Une fois l\'objectif atteint, tu t\'arrêtes de risquer, et les jours minimum sont validés avec de très petits trades.</li><li>Les résultats varient de ±1 point d\'une simulation à l\'autre. Ils décrivent ce qui se passerait si ton passé se répétait : ils ne garantissent rien.</li></ul></details>';
+  $("psOut").innerHTML = h;
+}
+
 /* =====================  Fiabilité des signaux (rejeu historique)  ===================== */
 function rStats(T) {
   const rs = T.map(t => t.R), wins = rs.filter(r => r > 0), losses = rs.filter(r => r <= 0);
@@ -4851,6 +5038,9 @@ function toolsInit() {
   setInterval(() => { const v = $("view-scanner"); if ($("scAuto").checked && v && !v.hidden && !document.hidden && !scan.busy && Date.now() - scan.at > 290000) scanRun(); }, 30000);
   $("btRun").addEventListener("click", btRun);
   $("bsRun").addEventListener("click", bsRun);
+  $("psForm").addEventListener("submit", e => { e.preventDefault(); psRun(); });
+  $("psRules").addEventListener("click", () => psFill(true));
+  $("psForm").elements.src.addEventListener("change", psToggle);
   for (const [id, k] of [["btTf", "bt-tf"], ["btRr", "bt-rr"], ["btMin", "bt-min"], ["btBars", "bt-bars"]]) { const v = store(k); if (v && [...$(id).options].some(o => o.value === v)) $(id).value = v; $(id).addEventListener("change", () => store(k, $(id).value)); }
   $("pfPeriod").addEventListener("change", pfLoad); $("pfInst").addEventListener("change", pfRender);
   $("coachRun").addEventListener("click", coachRun);
