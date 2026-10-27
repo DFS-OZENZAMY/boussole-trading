@@ -578,6 +578,7 @@ button.danger{background:var(--bear);border-color:var(--bear);color:#fff}
       <button type="button" data-view="liquidite"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h7M3 9h12M3 13h5M3 17h14M3 21h9"/><path d="M19 4v16"/></svg><span>Liquidité</span></button>
       <button type="button" data-view="footprint"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="7" height="18" rx="1.5"/><rect x="13" y="6" width="7" height="12" rx="1.5"/><path d="M4 9h7M4 15h7M13 10h7M13 14h7"/></svg><span>Footprint</span></button>
       <button type="button" data-view="fiabilite"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V4M4 20h16"/><path d="M7 15l4-4 3 3 5-6"/></svg><span>Fiabilité des signaux</span></button>
+      <button type="button" data-view="strategies"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg><span>Meilleures stratégies</span></button>
       <button type="button" data-view="robot"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 8V5M9 13h.01M15 13h.01M9.5 16h5"/><circle cx="12" cy="4" r="1"/></svg><span>Robot</span></button>
       <button type="button" data-view="position"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.8"/></svg><span>Ma position</span><i class="dot" id="navPosDot"></i></button>
       <div class="sep"></div>
@@ -865,6 +866,19 @@ button.danger{background:var(--bear);border-color:var(--bear);color:#fff}
         <div id="btOut"></div>
       </div>
 
+      <div class="view" id="view-strategies" data-view="strategies" hidden>
+        <div class="vh"><div><h2>Meilleures stratégies</h2><p>Boussole teste les stratégies du robot sur <b id="bsInst"></b> dans les 5 unités de temps, garde celles qui restent gagnantes sur une période de vérification jamais vue pour choisir le réglage, puis calcule les entrées qui se déclencheraient ensuite : niveau, stop et objectif, à afficher sur le graphique.</p></div></div>
+        <section class="card">
+          <div class="bt-form">
+            <label>Historique par unité de temps <select id="bsBars"><option value="2000">2 000 bougies</option><option value="3000" selected>3 000 bougies</option><option value="5000">5 000 bougies</option></select></label>
+            <div class="bt-go"><button type="button" id="bsRun">Chercher les meilleures stratégies</button></div>
+          </div>
+          <p class="status" id="bsStatus"></p>
+          <p class="muted">Compte une à deux minutes. Les entrées à venir ne sont pas des prévisions : ce sont les niveaux où une stratégie qui a déjà fait ses preuves donnerait un signal si le prix y arrive. Les stratégies rejetées par le test n'affichent aucune entrée.</p>
+        </section>
+        <div id="bsOut"></div>
+      </div>
+
       <div class="view" id="view-performance" data-view="performance" hidden>
         <div class="vh"><div><h2>Performance</h2><p>Ce que disent tes trades : où tu gagnes, où tu perds, et dans quelles conditions. Tous les résultats sont en R, c'est-à-dire en multiples du montant risqué.</p></div>
           <div class="tools">
@@ -1127,6 +1141,11 @@ button.danger{background:var(--bear);border-color:var(--bear);color:#fff}
     <p>Les zones viennent des 200 dernières bougies de l'unité affichée. Chaque sommet ou creux local (où le prix s'est retourné) est un point de réaction ; il compte davantage s'il s'est formé avec un fort volume, une longue mèche de rejet, ou récemment. Les points proches (moins de 0,35 ATR) sont regroupés en zones, renforcées par le volume échangé à ces prix. Une zone au-dessus du prix est vendeuse (les vendeurs y sont intervenus), une zone en dessous est acheteuse. Le profil de volume, à droite du graphique, montre combien a été échangé à chaque prix ; la barre dorée marque le prix le plus échangé.</p>
     <p>L'afflux de volume compare le volume de la dernière minute à la moyenne par minute des deux dernières heures. À partir de 3 fois la normale, une alerte se déclenche, avec la part d'acheteurs et de vendeurs et ce que cela peut annoncer selon les zones proches et la tendance. Sur le graphique, les ronds dorés marquent les bougies à volume exceptionnel (plus de 2,5 fois la moyenne) ; « Absorption » signale un gros volume sur une petite bougie, souvent signe qu'un gros intervenant absorbe les ordres d'en face.</p>
     <p>Ces zones sont déduites de là où le marché a réellement réagi, pas des ordres en attente : pour voir les ordres posés dans le carnet, ouvre la vue Liquidité. Elles indiquent des endroits à surveiller, pas des niveaux garantis.</p>
+  </details>
+  <details>
+    <summary>Les meilleures stratégies et les entrées à venir</summary>
+    <p>La rubrique Meilleures stratégies teste les quatre stratégies du robot sur le marché affiché, dans les cinq unités de temps (5 min à 4 h). Pour chacune, le meilleur réglage est choisi sur la partie ancienne de l'historique puis vérifié sur la partie récente, jamais utilisée pour choisir. Les combinaisons gagnantes sur les deux périodes sont marquées « Validée » ; celles qui ont trop peu de trades sont « À confirmer » ; les autres sont rejetées et n'affichent aucune entrée.</p>
+    <p>Pour les combinaisons retenues, Boussole calcule les <b>entrées à venir</b> : le niveau où la stratégie donnerait un signal si le prix l'atteint (cassure, repli sur l'EMA 20, retour au VWAP, range d'ouverture), avec le stop et l'objectif. Ce ne sont pas des prévisions. Le bouton Graphique trace l'entrée, le stop et l'objectif sur le graphique, « Tout afficher » trace toutes les entrées, et Pine génère le script TradingView. Les résultats passés ne garantissent pas les résultats futurs.</p>
   </details>
   <details>
     <summary>Le scanner multi-instruments</summary>
@@ -1406,6 +1425,7 @@ function resetData() {
   if (typeof bookReset === "function") bookReset();
   if (typeof fpReset === "function") { fpReset(); fp.rowSel = store("fp-row-" + inst) || "auto"; }
   if (cs) { cs.setMarkers([]); for (const pl of propLines) { try { cs.removePriceLine(pl); } catch {} } propLines = []; }
+  try { bsClear(); } catch {}
   $("price").textContent = "—"; $("updated").textContent = "Pas encore chargé";
   $("vTitle").textContent = "En attente des données"; $("vScore").textContent = "";
   $("grid").innerHTML = ""; $("props").innerHTML = ""; $("propCtx").textContent = "En attente des données.";
@@ -3761,7 +3781,7 @@ const pn = v => v > 0 ? "p" : v < 0 ? "n" : "";
 function rules() { try { return Object.assign({ maxLoss: 3, maxTrades: 5, riskPct: 1, capital: 10000 }, JSON.parse(store("rules") || "{}")); } catch { return { maxLoss: 3, maxTrades: 5, riskPct: 1, capital: 10000 }; } }
 
 /* ---------- navigation ---------- */
-const VIEWS = ["journee", "marche", "graphique", "scanner", "liquidite", "footprint", "fiabilite", "robot", "position", "journal", "performance", "risque", "reglages", "admin", "aide"];
+const VIEWS = ["journee", "marche", "graphique", "scanner", "liquidite", "footprint", "fiabilite", "strategies", "robot", "position", "journal", "performance", "risque", "reglages", "admin", "aide"];
 function showView(v) {
   if (!VIEWS.includes(v) || (v === "admin" && ME.role !== "admin")) v = "journee";
   document.querySelectorAll(".view").forEach(s => s.hidden = s.dataset.view !== v);
@@ -3775,6 +3795,7 @@ function showView(v) {
   if (v === "robot") { botForm(); botRender(); }
   if (v === "scanner") { scanChips(); if (!scan.at && !scan.busy) scanRun(); }
   if (v === "fiabilite") $("btInst").textContent = INSTR[inst].name;
+  if (v === "strategies") { $("bsInst").textContent = INSTR[inst].name; bsRender(); }
   if (v === "admin") loadUsers();
   if (v === "risque") calcRisk();
   if (v === "journee") { renderDay(); loadCalendar(); }
@@ -4357,6 +4378,165 @@ async function scanOneUpdate(key) {
   scan.busy = false; $("scRun").disabled = false; $("scStatus").textContent = ""; scanRender();
 }
 
+/* =====================  Meilleures stratégies  ===================== */
+const BS = { res: null, busy: false, list: [] };
+var bsLines = [];
+const BS_SHORT = { vb: "Cass. vol.", orb: "Range", vwap: "VWAP", trend: "Tendance" };
+function bsClear() { if (cs) for (const l of bsLines || []) { try { cs.removePriceLine(l); } catch {} } bsLines = []; }
+function bsDraw(items, detail) {
+  bsClear(); if (!cs) return;
+  for (const it of items) {
+    bsLines.push(cs.createPriceLine({ price: it.entry, color: css("--gold"), lineStyle: 2, lineWidth: 1, axisLabelVisible: true, title: (it.short || BS_SHORT[it.id]) + " " + it.tfn + (it.dir > 0 ? " ▲" : " ▼") }));
+    if (detail) {
+      bsLines.push(cs.createPriceLine({ price: it.sl, color: css("--bear"), lineStyle: 1, lineWidth: 1, axisLabelVisible: true, title: "SL" }));
+      bsLines.push(cs.createPriceLine({ price: it.tp, color: css("--bull"), lineStyle: 1, lineWidth: 1, axisLabelVisible: true, title: "TP" }));
+    }
+  }
+}
+/* Niveaux où la stratégie donnerait un signal sur les prochaines bougies, d'après l'état actuel du marché. */
+function bsPending(id, p, arr, arrC, A, ctx) {
+  const L = arr.length - 1, px = arr[L].c, nowT = arr[L].t, today = Math.floor(nowT / 864e5), d0 = today * 864e5, out = [], infos = [];
+  if (!A) return { items: [], note: "pas assez de données." };
+  const add = (dir, entry, sl, tgt, cond, state, short) => {
+    const risk = Math.abs(entry - sl);
+    if (risk > 0 && (tgt - entry) * dir >= risk * 0.9) out.push({ dir, entry, sl, tp: tgt, cond, state: state || "", short });
+  };
+  const upTxt = dir => dir > 0 ? "au-dessus" : "en dessous";
+  if (id === "vb") {
+    const days = new Map();
+    for (const b of arr) { const d = Math.floor(b.t / 864e5), o = days.get(d); if (!o) days.set(d, { o: b.o, h: b.h, l: b.l }); else { o.h = Math.max(o.h, b.h); o.l = Math.min(o.l, b.l); } }
+    const prev = [...days.keys()].filter(k => k < today).sort((a, b) => a - b).slice(-3), T = days.get(today);
+    if (prev.length < 3 || !T) return { items: [], note: "pas assez de jours d'historique." };
+    const R = prev.reduce((a, k) => a + days.get(k).h - days.get(k).l, 0) / 3;
+    for (const dir of [1, -1]) {
+      const lvl = T.o + dir * p.k * R; let fired = false;
+      for (let i = 1; i < arrC.length; i++) {
+        const b = arrC[i], pc = arrC[i - 1];
+        if (Math.floor(b.t / 864e5) !== today || Math.floor(pc.t / 864e5) !== today) continue;
+        if (dir > 0 ? b.c > lvl && pc.c <= lvl : b.c < lvl && pc.c >= lvl) fired = true;
+      }
+      if (fired || (dir > 0 ? px > lvl : px < lvl)) continue;
+      const risk = 1.5 * A;
+      add(dir, lvl, lvl - dir * risk, lvl + dir * p.rr * risk, "Clôture " + upTxt(dir) + " de " + fmt(lvl) + " (ouverture du jour " + (dir > 0 ? "+" : "−") + " " + fmt(p.k, 1) + " × amplitude moyenne)");
+    }
+    return { items: out, note: out.length ? "" : "déjà déclenchée aujourd'hui ou niveaux dépassés." };
+  }
+  if (id === "orb") {
+    const hm = m => String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
+    for (const m of [420, 810]) {
+      const openT = d0 + m * 6e4, endT = openT + 30 * 6e4, winT = openT + 150 * 6e4, name = m === 420 ? "Londres" : "New York";
+      if (nowT >= winT) continue;
+      if (nowT < openT) { infos.push(name + " : range de " + hm(m) + " à " + hm(m + 30) + " UTC, niveaux connus ensuite"); continue; }
+      const rb = arr.filter(b => b.t >= openT && b.t < endT); if (!rb.length) continue;
+      const hi = Math.max(...rb.map(b => b.h)), lo = Math.min(...rb.map(b => b.l)), w = hi - lo, forming = nowT < endT;
+      if (!forming && !(w > 0.3 * A && w < 5 * A)) { infos.push(name + " : range hors limites, aucune cassure à suivre"); continue; }
+      if (!forming && arrC.some(b => b.t >= endT && (b.c > hi || b.c < lo))) { infos.push(name + " : cassure déjà survenue"); continue; }
+      for (const dir of [1, -1]) {
+        const entry = dir > 0 ? hi : lo, sl = p.stop === "mid" ? (hi + lo) / 2 : dir > 0 ? lo : hi;
+        add(dir, entry, sl, entry + dir * p.rr * Math.abs(entry - sl), "Clôture " + upTxt(dir) + " du range de " + name + " (" + fmt(lo) + " à " + fmt(hi) + ")", forming ? "range en formation" : "");
+      }
+    }
+    return { items: out, note: infos.length ? infos.join(" ; ") : (out.length ? "" : "aucune fenêtre d'ouverture en cours (Londres 07:00 UTC, New York 13:30 UTC).") };
+  }
+  if (id === "vwap") {
+    const ad = adxSeries(arrC), adx = ad[ad.length - 1]; let sw = 0, s1 = 0, s2 = 0, nb = 0;
+    for (const b of arrC) if (Math.floor(b.t / 864e5) === today) { const tp = (b.h + b.l + b.c) / 3, w = b.v > 0 ? b.v : 1; sw += w; s1 += w * tp; s2 += w * tp * tp; nb++; }
+    if (nb <= 12) return { items: [], note: "pas assez de bougies depuis le début de la journée pour calculer le VWAP." };
+    const vw = s1 / sw, sd = Math.sqrt(Math.max(0, s2 / sw - vw * vw));
+    if (!(sd > 0)) return { items: [], note: "écart-type nul." };
+    if (adx != null && adx >= 25) return { items: [], note: "marché trop directionnel (ADX " + fmt(adx, 0) + "), la stratégie est inactive." };
+    for (const dir of [1, -1]) {
+      const lvl = vw - dir * p.m * sd;
+      add(dir, lvl, lvl - dir * A, vw, "Excès " + (dir > 0 ? "sous " : "au-dessus de ") + fmt(lvl) + " (VWAP " + (dir > 0 ? "−" : "+") + " " + fmt(p.m, 1) + " écarts-types) puis clôture de retour " + (dir > 0 ? "au-dessus" : "en dessous") + ", objectif VWAP " + fmt(vw), "stop estimé");
+    }
+    return { items: out, note: "" };
+  }
+  if (id === "trend") {
+    let sum = 0, w = 0;
+    for (const t of ctx.higher) { const b = ctx.data[t.id].slice(0, -1).slice(-300), a = b.length > 211 ? analyse(b) : null; if (a) { sum += a.score * t.w; w += t.w; } }
+    const g = w ? Math.round(sum / w * 100) : 0;
+    if (Math.abs(g) < p.minG) return { items: [], note: "tendance de fond insuffisante (score " + (g > 0 ? "+" : "") + g + ", il faut au moins " + p.minG + ")." };
+    const d = Math.sign(g), c = arrC.map(b => b.c), n = c.length - 1, e20 = ema(c, 20)[n], e50 = ema(c, 50)[n], e200 = ema(c, 200)[n];
+    if (e200 == null) return { items: [], note: "historique trop court." };
+    if (!(d > 0 ? e20 > e50 && e50 > e200 : e20 < e50 && e50 < e200)) return { items: [], note: "moyennes mobiles non alignées dans le sens du score (" + (g > 0 ? "+" : "") + g + ")." };
+    if (d > 0 ? px > e50 : px < e50) {
+      const sl = d > 0 ? Math.min(e50 - 0.3 * A, e20 - A) : Math.max(e50 + 0.3 * A, e20 + A);
+      add(d, e20, sl, e20 + d * p.rr * Math.abs(e20 - sl), "Repli sur l'EMA 20 (" + fmt(e20) + ") puis clôture " + (d > 0 ? "haussière" : "baissière") + " au-delà", "", "Repli");
+    }
+    const lvl = d > 0 ? Math.max(...arrC.slice(-20).map(b => b.h)) : Math.min(...arrC.slice(-20).map(b => b.l));
+    if (d > 0 ? px < lvl : px > lvl) add(d, lvl, lvl - d * 1.5 * A, lvl + d * p.rr * 1.5 * A, "Cassure : clôture " + (d > 0 ? "au-dessus du plus haut" : "en dessous du plus bas") + " des 20 dernières bougies (" + fmt(lvl) + ")", "", "Cassure");
+    return { items: out, note: out.length ? "" : "aucun repli ni cassure à suivre pour le moment." };
+  }
+  return { items: [], note: "" };
+}
+async function bsRun() {
+  if (BS.busy) return;
+  const key = inst, N = +$("bsBars").value, cfg = Object.assign(botCfg(), { sessions: ["asia", "london", "overlap", "ny"] });
+  const say = (t, err) => { $("bsStatus").textContent = t; $("bsStatus").className = "status" + (err ? " err" : ""); };
+  BS.busy = true; $("bsRun").disabled = true; $("bsOut").innerHTML = "";
+  try {
+    const data = {};
+    for (const tf of TFS) { say("Chargement de l'historique " + tf.name + "…"); data[tf.id] = await fetchBars(key, tf.id, N); if (key !== inst) return; }
+    const h1 = data["1h"], cost = botCostFor(key, h1[h1.length - 1].c), rows = [], pend = [], notes = [];
+    for (const tf of TFS) {
+      const arr = data[tf.id], ms = TFMS[tf.id];
+      if (arr.length < 450) { notes.push(tf.name + " : historique trop court (" + arr.length + " bougies), unité de temps ignorée."); continue; }
+      const higher = TFS.slice(TFS.findIndex(t => t.id === tf.id)), A = atrSeries(arr), split = Math.floor(arr.length * 0.7), ctx = { ms, data, higher }, arrC = arr.slice(0, -1), Acur = atr(arrC);
+      for (const [id, S] of Object.entries(STRATS)) {
+        say("Test de « " + S.name + " » en " + tf.name + "…"); await sleep(10);
+        let best = null;
+        for (const p of S.grid) {
+          const T = botSim(arr, A, S.fn(arr, A, p, ctx), p, { cfg, cost: cost.v, bars: Math.max(24, Math.round(S.mins * 6e4 / ms)) });
+          const IS = rStats(T.filter(t => t.i < split)), OOS = rStats(T.filter(t => t.i >= split)), score = IS.n >= 15 ? IS.avg : -9 + IS.n / 100;
+          if (!best || score > best.score) best = { p, IS, OOS, score };
+        }
+        const slim = x => ({ n: x.n, avg: x.avg, win: x.win, pf: x.pf === Infinity ? 99 : x.pf, dd: x.dd }), { IS, OOS } = best;
+        const verdict = IS.n < 15 || OOS.n < 10 ? "peu" : IS.avg > 0.1 && OOS.avg > 0.1 && OOS.pf > 1.2 ? "ok" : "ko";
+        rows.push({ tf: tf.id, tfn: tf.name, id, name: S.name, p: best.p, IS: slim(IS), OOS: slim(OOS), verdict });
+        if (verdict === "ok" || (verdict === "peu" && IS.avg > 0.1 && OOS.n > 0 && OOS.avg > 0)) {
+          const r = bsPending(id, best.p, arr, arrC, Acur, ctx);
+          for (const it of r.items) pend.push(Object.assign({ tf: tf.id, tfn: tf.name, id, name: S.name, verdict, oos: OOS.avg, A: Acur, px: arr[arr.length - 1].c }, it));
+          if (r.note) notes.push(S.name + " en " + tf.name + " : " + r.note);
+        }
+      }
+    }
+    BS.res = { key, at: Date.now(), cost, rows, pend, notes, N };
+    say(""); bsRender();
+  } catch (e) { say(e.message === "Failed to fetch" ? "Connexion impossible pour charger l'historique." : e.message, true); }
+  finally { BS.busy = false; $("bsRun").disabled = false; }
+}
+function bsRender() {
+  const R = BS.res, box = $("bsOut"); if (!R) { box.innerHTML = ""; return; }
+  const same = R.key === inst, rank = { ok: 0, peu: 1, ko: 2 };
+  const tag = v => v === "ok" ? '<span class="tag ok">Validée</span>' : v === "peu" ? '<span class="tag">À confirmer</span>' : '<span class="tag off">Rejetée</span>';
+  const S = x => x.n ? x.n + " trades, " + fmt(x.win, 0) + " %, " + (x.avg > 0 ? "+" : "") + fmt(x.avg, 2) + " R, PF " + fmt(x.pf, 2) : "—";
+  const rows = R.rows.slice().sort((a, b) => rank[a.verdict] - rank[b.verdict] || b.OOS.avg - a.OOS.avg);
+  const list = R.pend.slice().sort((a, b) => rank[a.verdict] - rank[b.verdict] || b.oos - a.oos || Math.abs(a.entry - a.px) / a.A - Math.abs(b.entry - b.px) / b.A);
+  BS.list = list;
+  const pd = instPD(R.key), nOk = rows.filter(r => r.verdict === "ok").length;
+  let h = '<section class="card"><div class="card-h"><h3>Entrées à venir</h3><span class="muted" style="margin:0">' + esc(instName(R.key)) + ", calculé à " + new Date(R.at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) + "</span></div>" +
+    (same ? "" : '<p class="muted">Ces résultats concernent un autre marché que celui du graphique : relance la recherche pour afficher les entrées sur le graphique.</p>') +
+    (list.length ? '<div class="tools" style="margin:0 0 10px"><button type="button" id="bsAll"' + (same ? "" : " disabled") + '>Tout afficher sur le graphique</button><button type="button" class="ghost" id="bsNone"' + (same ? "" : " disabled") + '>Effacer les lignes</button></div>' : "") +
+    (list.length ? '<div class="scroll"><table class="sc-tbl"><thead><tr><th>Stratégie</th><th>Unité</th><th>Sens</th><th>Condition</th><th>Entrée</th><th>SL</th><th>TP</th><th>Distance</th><th>Verdict</th><th></th></tr></thead><tbody>' +
+      list.map((it, i) => "<tr><td><b>" + esc(it.name) + "</b>" + (it.short && it.id === "trend" ? '<br><small class="muted">' + esc(it.short) + "</small>" : "") + "</td><td>" + esc(it.tfn) + "</td>" +
+        "<td>" + (it.dir > 0 ? '<span class="p"><b>Achat</b></span>' : '<span class="n"><b>Vente</b></span>') + "</td>" +
+        '<td style="white-space:normal;min-width:240px"><small>' + esc(it.cond) + (it.state ? ' <span class="warn">(' + esc(it.state) + ")</span>" : "") + "</small></td>" +
+        "<td><b>" + fmt(it.entry, pd) + '</b></td><td class="n">' + fmt(it.sl, pd) + '</td><td class="p">' + fmt(it.tp, pd) + "</td>" +
+        "<td><small>" + (it.entry > it.px ? "+" : "") + fmt((it.entry - it.px) / it.px * 100, 2) + " %, " + fmt(Math.abs(it.entry - it.px) / it.A, 1) + " ATR</small></td><td>" + tag(it.verdict) + "</td>" +
+        '<td style="white-space:nowrap"><button type="button" class="ghost" data-show="' + i + '"' + (same ? "" : " disabled") + '>Graphique</button> <button type="button" class="ghost" data-pine="' + i + '"' + (same ? "" : " disabled") + ">Pine</button></td></tr>").join("") + "</tbody></table></div>"
+      : '<p class="muted">' + (nOk ? "Aucune entrée à suivre pour le moment sur les stratégies validées : les conditions ne sont pas réunies." : "Aucune stratégie validée sur ce marché : Boussole ne propose pas d'entrée.") + "</p>") +
+    (R.notes.length ? '<details style="margin-top:10px"><summary>Pourquoi pas d\'entrée pour certaines stratégies</summary><ul class="muted">' + R.notes.map(n => "<li>" + esc(n) + "</li>").join("") + "</ul></details>" : "") + "</section>";
+  h += '<section class="card"><div class="card-h"><h3>Classement des stratégies</h3><span class="muted" style="margin:0">' + nOk + " validée" + (nOk > 1 ? "s" : "") + " sur " + rows.length + "</span></div>" +
+    '<div class="scroll"><table class="sc-tbl"><thead><tr><th>#</th><th>Stratégie</th><th>Unité</th><th>Réglage retenu</th><th>Période d\'essai (70 %)</th><th>Vérification (30 %)</th><th>Verdict</th></tr></thead><tbody>' +
+    rows.map((r, i) => "<tr><td>" + (i + 1) + "</td><td><b>" + esc(r.name) + "</b></td><td>" + esc(r.tfn) + "</td><td><small>" + esc(paramText(r.id, r.p)) + '</small></td><td><small>' + S(r.IS) + '</small></td><td class="' + pn(r.OOS.avg) + '"><small>' + S(r.OOS) + "</small></td><td>" + tag(r.verdict) + "</td></tr>").join("") + "</tbody></table></div>" +
+    '<p class="muted">Chaque stratégie est testée sur chaque unité de temps : le meilleur réglage est choisi sur les 70 % les plus anciens de l\'historique, puis vérifié sur les 30 % suivants. Coût par trade déduit : ' + esc(R.cost.src) + ". « Validée » : au moins 15 trades à l'essai et 10 en vérification, avec plus de +0,1 R par trade dans les deux périodes et un profit factor de vérification supérieur à 1,2. « À confirmer » : trop peu de trades pour conclure (les entrées ne sont affichées que si les deux périodes sont positives). Comme " + rows.length + " combinaisons sont testées, une peut paraître gagnante par hasard, et les résultats passés ne garantissent rien : teste en démo avant de risquer de l'argent.</p></section>";
+  box.innerHTML = h;
+  box.querySelectorAll("button[data-show]").forEach(b => b.addEventListener("click", () => { const it = BS.list[+b.dataset.show]; setTf(it.tf); bsDraw([it], true); showView("graphique"); }));
+  box.querySelectorAll("button[data-pine]").forEach(b => b.addEventListener("click", () => { const it = BS.list[+b.dataset.pine]; pinePlace({ name: it.name + " " + it.tfn, dir: it.dir, entry: it.entry, sl: it.sl, tp: it.tp }); bsDraw([it], true); showView("graphique"); }));
+  if ($("bsAll")) $("bsAll").addEventListener("click", () => { bsDraw(BS.list, false); showView("graphique"); });
+  if ($("bsNone")) $("bsNone").addEventListener("click", bsClear);
+}
+
 /* =====================  Fiabilité des signaux (rejeu historique)  ===================== */
 function rStats(T) {
   const rs = T.map(t => t.R), wins = rs.filter(r => r > 0), losses = rs.filter(r => r <= 0);
@@ -4670,6 +4850,7 @@ function toolsInit() {
   $("scAuto").addEventListener("change", () => store("scan-auto", $("scAuto").checked ? "1" : "0"));
   setInterval(() => { const v = $("view-scanner"); if ($("scAuto").checked && v && !v.hidden && !document.hidden && !scan.busy && Date.now() - scan.at > 290000) scanRun(); }, 30000);
   $("btRun").addEventListener("click", btRun);
+  $("bsRun").addEventListener("click", bsRun);
   for (const [id, k] of [["btTf", "bt-tf"], ["btRr", "bt-rr"], ["btMin", "bt-min"], ["btBars", "bt-bars"]]) { const v = store(k); if (v && [...$(id).options].some(o => o.value === v)) $(id).value = v; $(id).addEventListener("change", () => store(k, $(id).value)); }
   $("pfPeriod").addEventListener("change", pfLoad); $("pfInst").addEventListener("change", pfRender);
   $("coachRun").addEventListener("click", coachRun);
