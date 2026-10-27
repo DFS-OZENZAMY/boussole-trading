@@ -833,6 +833,9 @@ button.danger{background:var(--bear);border-color:var(--bear);color:#fff}
       <div class="view" id="view-scanner" data-view="scanner" hidden>
         <div class="vh"><div><h2>Scanner</h2><p>Tous tes marchés suivis, classés par qualité de configuration : alignement des unités de temps, signaux récents, zones proches et réveil de la volatilité. Clique sur une ligne pour l'analyser en détail.</p></div>
           <div class="tools">
+            <label>Tendance suivie <select id="scTf"><option value="global">Globale (5 unités)</option><option value="5m">5 min</option><option value="15m">15 min</option><option value="30m">30 min</option><option value="1h">1 h</option><option value="4h">4 h</option></select></label>
+            <label>Sens <select id="scSide"><option value="both">Achat et vente</option><option value="buy">Achat seulement</option><option value="sell">Vente seulement</option></select></label>
+            <label class="chk"><input type="checkbox" id="scReady"> Setups prêts seulement</label>
             <label class="chk"><input type="checkbox" id="scAuto" checked> Actualiser toutes les 5 min</label>
             <button type="button" id="scRun">Scanner maintenant</button>
           </div></div>
@@ -1127,6 +1130,7 @@ button.danger{background:var(--bear);border-color:var(--bear);color:#fff}
   </details>
   <details>
     <summary>Le scanner multi-instruments</summary>
+    <p>Choisis l'unité de temps dont le scanner suit la tendance (ou la tendance globale) et le sens à chercher : achat, vente ou les deux. Le sens vient toujours de la tendance : haussière, le scanner cherche des achats ; baissière, des ventes ; jamais à contre-courant. Un marché est « prêt » quand un repli ou une cassure vient d'apparaître dans ce sens, avec une entrée, un stop et un objectif proposés.</p>
     <p>Le scanner analyse tous tes marchés suivis sur les 5 unités de temps et les classe par qualité de configuration, de 0 à 100. La note monte quand les unités de temps sont alignées, quand un repli ou une cassure vient d'apparaître dans le sens de la tendance et quand une zone d'appui est proche. Elle baisse quand le prix bute sur une zone contraire. La colonne Volatilité compare l'ATR 1 h actuel à sa valeur habituelle : au-dessus de ×1,3, le marché se réveille.</p>
     <p>Ajoute ou retire des marchés sous le tableau. Le scan se relance toutes les 5 minutes tant que la page est ouverte. Une note élevée signale un marché à regarder de près, pas une entrée automatique : clique sur la ligne pour vérifier l'analyse complète.</p>
   </details>
@@ -4214,7 +4218,7 @@ async function fetchBars(key, tfId, n, forceCt) {
 }
 
 /* =====================  Scanner  ===================== */
-const scan = { list: [], res: new Map(), busy: false, at: 0, timer: null };
+const scan = { list: [], res: new Map(), busy: false, at: 0, timer: null, tf: "1h", side: "both", ready: false };
 function scanDefault() {
   const cat = ctCatLoad(), names = new Set(cat ? cat.list.map(x => x.n) : []);
   return ["gold", "nasdaq"].concat(["EURUSD", "GBPUSD", "USDJPY", "US30", "GER40", "BTCUSD", "XAGUSD", "USOIL"].filter(n => names.has(n)).map(n => "ct:" + n)).slice(0, 10);
@@ -4233,24 +4237,59 @@ async function scanOne(key) {
   let sum = 0, w = 0, up = 0, dn = 0;
   for (const { tf, a } of per) if (a) { sum += a.score * tf.w; w += tf.w; if (a.raw >= 2) up++; if (a.raw <= -2) dn++; }
   if (!w) throw new Error("Historique insuffisant.");
-  const g = Math.round(sum / w * 100), d = Math.abs(g) >= 15 ? Math.sign(g) : 0, h1 = bars["1h"], m15 = bars["15m"], px = h1[h1.length - 1].c;
+  const g = Math.round(sum / w * 100), h1 = bars["1h"], px = h1[h1.length - 1].c;
   const ref = h1[Math.max(0, h1.length - 25)].c, chg = (px - ref) / ref * 100;
   const as = atrSeries(h1).filter(x => x != null), last = as.slice(-100).sort((a, b) => a - b), vol = last.length ? as[as.length - 1] / last[Math.floor(last.length / 2)] : 1;
-  let zone = null; const Z = computeZones(h1);
-  if (Z && Z.zones) { const z = Z.zones.filter(z => z.side !== "mid").sort((a, b) => a.dist - b.dist)[0]; if (z) zone = { side: z.side, strength: z.strength || "", atr: Math.max(0, z.dist) / Z.A }; }
-  const recent = (arr, tfn, maxAgo) => { const s = findSignals(arr).filter(s => arr.length - 1 - s.i <= maxAgo).pop(); return s ? Object.assign({ tfn, ago: arr.length - 1 - s.i }, s) : null; };
-  const sigs = [recent(h1, "1 h", 3), recent(m15, "15 min", 4)].filter(Boolean), sig = sigs.find(s => d && s.dir === d) || sigs[0] || null;
-  const align = d > 0 ? up : d < 0 ? dn : 0, zWith = zone && zone.atr <= 1 && ((d > 0 && zone.side === "buy") || (d < 0 && zone.side === "sell")), zAgainst = zone && zone.atr <= 0.5 && ((d > 0 && zone.side === "sell") || (d < 0 && zone.side === "buy"));
-  let q = Math.min(55, Math.abs(g) * 0.6) + align * 5 + (sig && d && sig.dir === d ? 15 : 0) + (zWith ? 8 : 0) - (zAgainst ? 15 : 0) + (vol >= 1.3 ? 4 : 0);
+  /* Analyse de chaque unité de temps : tendance, signal récent, zone la plus proche, ATR.
+     Le choix de l'unité de temps suivie se fait ensuite à l'affichage, sans nouveau téléchargement. */
+  const byTf = {};
+  for (const { tf, a } of per) {
+    const arr = bars[tf.id]; if (!a || !arr) continue;
+    const sg = findSignals(arr).filter(x => arr.length - 1 - x.i <= 4).pop();
+    let zone = null;
+    try {
+      const Z = computeZones(arr);
+      if (Z && Z.zones) { const z = Z.zones.filter(z => z.side !== "mid").sort((a, b) => a.dist - b.dist)[0]; if (z) zone = { side: z.side, strength: z.strength || "", atr: Math.max(0, z.dist) / Z.A }; }
+    } catch {}
+    byTf[tf.id] = { a, px: arr[arr.length - 1].c, atr: atr(arr), zone, sig: sg ? { type: sg.type, dir: sg.dir, ago: arr.length - 1 - sg.i } : null };
+  }
+  return { key, g, up, dn, per, px, chg, vol, byTf };
+}
+/* Vue du scanner pour l'unité de temps suivie (scan.tf) : la direction (achat ou vente) vient
+   de la tendance de cette unité de temps, et seuls les signaux dans ce sens comptent. */
+function scanView(r) {
+  const tfo = TFS.find(t => t.id === scan.tf), glob = !tfo;
+  let d, base, sigs, ref, zone;
+  if (glob) {
+    d = Math.abs(r.g) >= 15 ? Math.sign(r.g) : 0; base = Math.abs(r.g); ref = r.byTf["1h"] || null; zone = ref ? ref.zone : null;
+    sigs = [["1h", "1 h"], ["15m", "15 min"]].map(([id, n]) => r.byTf[id] && r.byTf[id].sig ? Object.assign({ tfn: n }, r.byTf[id].sig) : null).filter(Boolean);
+  } else {
+    const t = r.byTf[tfo.id];
+    if (!t) return { key: r.key, err: "Historique insuffisant en " + tfo.name + "." };
+    d = t.a.raw >= 2 ? 1 : t.a.raw <= -2 ? -1 : 0; base = Math.abs(t.a.score) * 100; ref = t; zone = t.zone;
+    sigs = t.sig ? [Object.assign({ tfn: tfo.name }, t.sig)] : [];
+  }
+  const sig = (d ? sigs.find(x => x.dir === d) : sigs[0]) || null, contre = d && !sig && sigs.length ? sigs[0] : null;
+  const ok = !!(sig && d), align = d > 0 ? r.up : d < 0 ? r.dn : 0;
+  const zWith = zone && zone.atr <= 1 && ((d > 0 && zone.side === "buy") || (d < 0 && zone.side === "sell"));
+  const zAgainst = zone && zone.atr <= 0.5 && ((d > 0 && zone.side === "sell") || (d < 0 && zone.side === "buy"));
+  let q = Math.min(55, base * 0.6) + align * 5 + (ok ? 15 : 0) + (zWith ? 8 : 0) - (zAgainst ? 15 : 0) + (r.vol >= 1.3 ? 4 : 0);
   if (!d) q = Math.min(q, 25);
+  q = Math.max(0, Math.min(100, Math.round(q)));
+  let setup = null;
+  if (ok && ref && ref.atr) {
+    const rr = parseFloat($("rr") && $("rr").value) || 2, risk = 1.5 * ref.atr;
+    setup = { entry: ref.px, sl: ref.px - d * risk, tp: ref.px + d * risk * rr, rr };
+  }
   const why = [];
-  if (d) why.push((d > 0 ? "Tendance haussière" : "Tendance baissière") + " sur " + align + " unité" + (align > 1 ? "s" : "") + " de temps sur 5");
-  else why.push("Unités de temps contradictoires");
+  if (d) why.push((d > 0 ? "Tendance haussière" : "Tendance baissière") + (glob ? " sur " + align + " unité" + (align > 1 ? "s" : "") + " de temps sur 5" : " en " + tfo.name));
+  else why.push(glob ? "Unités de temps contradictoires" : "Pas de tendance claire en " + tfo.name);
   if (sig) why.push((sig.type === "pb" ? "repli" : "cassure") + " " + (sig.dir > 0 ? "acheteur" : "vendeur") + " en " + sig.tfn + (sig.ago ? " il y a " + sig.ago + " bougie" + (sig.ago > 1 ? "s" : "") : " sur la dernière bougie"));
+  else if (contre) why.push("signal " + (contre.dir > 0 ? "acheteur" : "vendeur") + " ignoré car contraire à la tendance");
   if (zAgainst) why.push("bute sur une zone " + (zone.side === "sell" ? "vendeuse" : "acheteuse") + " toute proche");
   else if (zWith) why.push("appui sur une zone " + (zone.side === "buy" ? "acheteuse" : "vendeuse") + " proche");
-  if (vol >= 1.3) why.push("volatilité en hausse");
-  return { key, g, d, up, dn, per, px, chg, vol, zone, sig, q: Math.max(0, Math.min(100, Math.round(q))), why: why.join(", ") + "." };
+  if (r.vol >= 1.3) why.push("volatilité en hausse");
+  return { key: r.key, g: r.g, d, q, sig, ok, zone, per: r.per, px: r.px, chg: r.chg, vol: r.vol, setup, why: why.join(", ") + "." };
 }
 async function scanRun() {
   if (scan.busy) return; scan.busy = true; $("scRun").disabled = true;
@@ -4265,26 +4304,34 @@ async function scanRun() {
   $("scStatus").textContent = "Dernier scan à " + new Date(scan.at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) + (errs ? ", " + errs + " marché" + (errs > 1 ? "s" : "") + " non analysé" + (errs > 1 ? "s" : "") + " (voir la ligne)." : ".");
 }
 function scanRender() {
-  const rows = scan.list.map(k => scan.res.get(k) || { key: k, wait: true });
-  rows.sort((a, b) => (a.err || a.wait ? -1 : a.q) > (b.err || b.wait ? -1 : b.q) ? -1 : 1);
-  const dots = r => r.per.map(({ tf, a }) => '<i class="' + (!a ? "" : a.raw >= 2 ? "up" : a.raw <= -2 ? "dn" : "fl") + '" title="' + tf.name + " : " + (a ? a.label : "indisponible") + '"></i>').join("");
-  $("scTable").innerHTML = '<table class="sc-tbl"><thead><tr><th>Marché</th><th>Qualité</th><th>Score</th><th>Unités de temps</th><th>Prix</th><th>24 h</th><th>Signal récent</th><th>Zone la plus proche</th><th>Volatilité</th></tr></thead><tbody>' +
+  const all = scan.list.map(k => scan.res.get(k) || { key: k, wait: true }).map(r => r.wait || r.err ? r : scanView(r));
+  const ready = all.filter(r => r.ok), nb = ready.filter(r => r.d > 0).length, ns = ready.filter(r => r.d < 0).length;
+  let rows = all.filter(r => r.wait || r.err || ((scan.side === "both" || (scan.side === "buy" ? r.d > 0 : r.d < 0)) && (!scan.ready || r.ok)));
+  const score = r => r.err || r.wait ? -2 : (r.ok ? 1000 : 0) + r.q;
+  rows.sort((a, b) => score(b) - score(a));
+  const tfo = TFS.find(t => t.id === scan.tf), dots = r => r.per.map(({ tf, a }) => '<i class=\"' + (!a ? "" : a.raw >= 2 ? "up" : a.raw <= -2 ? "dn" : "fl") + '\" title=\"' + tf.name + " : " + (a ? a.label : "indisponible") + '\"></i>').join("");
+  const pd0 = r => instPD(r.key);
+  $("scTable").innerHTML = '<p class=\"muted\" style=\"margin:0 0 10px\">' + (tfo ? "Tendance suivie : <b>" + tfo.name + "</b>. " : "Tendance suivie : <b>globale</b>. ") + "<b>" + ready.length + "</b> setup" + (ready.length > 1 ? "s" : "") + " prêt" + (ready.length > 1 ? "s" : "") + " : <span class=\"p\"><b>" + nb + " achat" + (nb > 1 ? "s" : "") + "</b></span>, <span class=\"n\"><b>" + ns + " vente" + (ns > 1 ? "s" : "") + "</b></span>.</p>" +
+    '<table class=\"sc-tbl\"><thead><tr><th>Marché</th><th>Sens</th><th>Qualité</th><th>Score</th><th>Unités de temps</th><th>Prix</th><th>24 h</th><th>Signal récent</th><th>Entrée / SL / TP</th><th>Zone la plus proche</th><th>Volatilité</th></tr></thead><tbody>' +
     rows.map(r => {
-      const nm = '<td><b>' + esc(instName(r.key)) + "</b></td>";
-      if (r.wait) return '<tr class="wait" data-k="' + esc(r.key) + '">' + nm + '<td colspan="8" class="muted">En attente du scan</td></tr>';
-      if (r.err) return '<tr class="err" data-k="' + esc(r.key) + '">' + nm + '<td colspan="8" class="muted">' + esc(r.err) + "</td></tr>";
-      const pd = instPD(r.key);
-      return '<tr data-k="' + esc(r.key) + '" title="' + esc(r.why) + '">' + nm +
-        '<td><div class="sc-q"><span style="width:' + r.q + '%" class="' + (r.d > 0 ? "up" : r.d < 0 ? "dn" : "") + '"></span></div><small>' + r.q + "</small></td>" +
-        '<td class="' + pn(r.g) + '"><b>' + (r.g > 0 ? "+" : "") + r.g + "</b></td>" +
-        '<td><span class="sc-dots">' + dots(r) + "</span></td>" +
+      const nm = "<td><b>" + esc(instName(r.key)) + "</b></td>";
+      if (r.wait) return '<tr class=\"wait\" data-k=\"' + esc(r.key) + '\">' + nm + '<td colspan=\"10\" class=\"muted\">En attente du scan</td></tr>';
+      if (r.err) return '<tr class=\"err\" data-k=\"' + esc(r.key) + '\">' + nm + '<td colspan=\"10\" class=\"muted\">' + esc(r.err) + "</td></tr>";
+      const pd = pd0(r), sens = r.d > 0 ? '<span class=\"p\"><b>Achat</b></span>' : r.d < 0 ? '<span class=\"n\"><b>Vente</b></span>' : '<span class=\"muted\">Neutre</span>';
+      return '<tr data-k=\"' + esc(r.key) + '\" title=\"' + esc(r.why) + '\">' + nm +
+        "<td>" + sens + (r.ok ? ' <small class=\"warn\">prêt</small>' : r.d ? ' <small class=\"muted\">attendre</small>' : "") + "</td>" +
+        '<td><div class=\"sc-q\"><span style=\"width:' + r.q + '%\" class=\"' + (r.d > 0 ? "up" : r.d < 0 ? "dn" : "") + '\"></span></div><small>' + r.q + "</small></td>" +
+        '<td class=\"' + pn(r.g) + '\"><b>' + (r.g > 0 ? "+" : "") + r.g + "</b></td>" +
+        '<td><span class=\"sc-dots\">' + dots(r) + "</span></td>" +
         "<td>" + fmt(r.px, pd) + "</td>" +
-        '<td class="' + pn(r.chg) + '">' + (r.chg > 0 ? "+" : "") + fmt(r.chg, 2) + " %</td>" +
-        "<td>" + (r.sig ? '<span class="' + (r.sig.dir > 0 ? "p" : "n") + '">' + (r.sig.type === "pb" ? "Repli" : "Cassure") + " " + r.sig.tfn + "</span>" + (r.sig.ago ? ' <small class="muted">il y a ' + r.sig.ago + "</small>" : ' <small class="muted">maintenant</small>') : '<span class="muted">—</span>') + "</td>" +
-        "<td>" + (r.zone ? '<span class="' + (r.zone.side === "buy" ? "p" : "n") + '">' + (r.zone.side === "buy" ? "Acheteuse" : "Vendeuse") + " " + esc(r.zone.strength) + "</span> <small class=\"muted\">" + (r.zone.atr < 0.05 ? "dedans" : "à " + fmt(r.zone.atr, 1) + " ATR") + "</small>" : '<span class="muted">—</span>') + "</td>" +
-        '<td class="' + (r.vol >= 1.3 ? "warn" : "") + '">×' + fmt(r.vol, 1) + "</td></tr>";
+        '<td class=\"' + pn(r.chg) + '\">' + (r.chg > 0 ? "+" : "") + fmt(r.chg, 2) + " %</td>" +
+        "<td>" + (r.sig ? '<span class=\"' + (r.sig.dir > 0 ? "p" : "n") + '\">' + (r.sig.type === "pb" ? "Repli" : "Cassure") + " " + r.sig.tfn + "</span>" + (r.sig.ago ? ' <small class=\"muted\">il y a ' + r.sig.ago + "</small>" : ' <small class=\"muted\">maintenant</small>') : '<span class=\"muted\">—</span>') + "</td>" +
+        "<td>" + (r.setup ? "<small>" + fmt(r.setup.entry, pd) + ' / <span class=\"n\">' + fmt(r.setup.sl, pd) + '</span> / <span class=\"p\">' + fmt(r.setup.tp, pd) + "</span></small>" : '<span class=\"muted\">—</span>') + "</td>" +
+        "<td>" + (r.zone ? '<span class=\"' + (r.zone.side === "buy" ? "p" : "n") + '\">' + (r.zone.side === "buy" ? "Acheteuse" : "Vendeuse") + " " + esc(r.zone.strength) + "</span> <small class=\"muted\">" + (r.zone.atr < 0.05 ? "dedans" : "à " + fmt(r.zone.atr, 1) + " ATR") + "</small>" : '<span class=\"muted\">—</span>') + "</td>" +
+        '<td class=\"' + (r.vol >= 1.3 ? "warn" : "") + '\">×' + fmt(r.vol, 1) + "</td></tr>";
     }).join("") + "</tbody></table>" +
-    '<p class="muted sc-legend">Qualité sur 100 : alignement des unités de temps, signal récent dans le sens de la tendance, zone d\'appui proche, et pénalité si le prix bute sur une zone contraire. Volatilité : ATR 1 h actuel rapporté à sa médiane des 100 dernières heures. Survole une ligne pour le détail, clique pour l\'analyser.</p>';
+    (rows.length ? "" : '<p class=\"muted\">Aucun marché ne correspond à ce filtre pour le moment.</p>') +
+    '<p class=\"muted sc-legend\">Sens : achat si la tendance de l\'unité de temps suivie est haussière, vente si elle est baissière, jamais à contre-courant. « Prêt » : un repli sur EMA 20 ou une cassure vient d\'apparaître dans le sens de la tendance. Entrée au dernier prix, stop à 1,5 ATR, objectif au ratio visé (réglable dans Graphique et entrées). Qualité sur 100 : force et alignement de la tendance, signal récent, zone d\'appui proche, pénalité si le prix bute sur une zone contraire. Volatilité : ATR 1 h actuel rapporté à sa médiane des 100 dernières heures.</p>';
   $("scTable").querySelectorAll("tr[data-k]").forEach(tr => tr.addEventListener("click", () => { const k = tr.dataset.k; switchInstrument(k); start(); showView("marche"); }));
 }
 function scanChips() {
@@ -4613,6 +4660,12 @@ function toolsInit() {
   scan.list = scanLoad(); scanChips(); scanRender();
   $("scRun").addEventListener("click", scanRun);
   $("scAddForm").addEventListener("submit", e => { e.preventDefault(); scanAdd($("scAdd").value); });
+  scan.tf = store("scan-tf") || "1h"; scan.side = store("scan-side") || "both"; scan.ready = store("scan-ready") === "1";
+  $("scTf").value = scan.tf; $("scSide").value = scan.side; $("scReady").checked = scan.ready;
+  $("scTf").addEventListener("change", () => { scan.tf = $("scTf").value; store("scan-tf", scan.tf); scanRender(); });
+  $("scSide").addEventListener("change", () => { scan.side = $("scSide").value; store("scan-side", scan.side); scanRender(); });
+  $("scReady").addEventListener("change", () => { scan.ready = $("scReady").checked; store("scan-ready", scan.ready ? "1" : "0"); scanRender(); });
+  $("rr").addEventListener("change", scanRender);
   $("scAuto").checked = store("scan-auto") !== "0";
   $("scAuto").addEventListener("change", () => store("scan-auto", $("scAuto").checked ? "1" : "0"));
   setInterval(() => { const v = $("view-scanner"); if ($("scAuto").checked && v && !v.hidden && !document.hidden && !scan.busy && Date.now() - scan.at > 290000) scanRun(); }, 30000);
