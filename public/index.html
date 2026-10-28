@@ -863,7 +863,7 @@ button.danger{background:var(--bear);border-color:var(--bear);color:#fff}
             <label>Unité de temps des signaux <select id="btTf"><option value="15m">15 min</option><option value="1h" selected>1 h</option><option value="4h">4 h</option></select></label>
             <label>Ratio gain / risque <select id="btRr"><option value="1.5">1 : 1,5</option><option value="2" selected>1 : 2</option><option value="3">1 : 3</option></select></label>
             <label>Filtre de tendance <select id="btMin"><option value="15" selected>Score ≥ 15 (règle de l'application)</option><option value="40">Score ≥ 40 (biais fort)</option></select></label>
-            <label>Historique <select id="btBars"><option value="1000">1 000 bougies</option><option value="2000" selected>2 000 bougies</option><option value="3000">3 000 bougies</option></select></label>
+            <label>Historique <select id="btBars"><option value="1000">1 000 bougies</option><option value="2000" selected>2 000 bougies</option><option value="3000">3 000 bougies</option><option value="5000">5 000 bougies</option></select></label>
             <label>Coût par trade (spread et commission) <input id="btCost" inputmode="decimal" placeholder="0"></label>
             <div class="bt-go"><button type="button" id="btRun">Lancer le test</button></div>
           </div>
@@ -1189,6 +1189,11 @@ button.danger{background:var(--bear);border-color:var(--bear);color:#fff}
     <p>Choisis l'unité de temps dont le scanner suit la tendance (ou la tendance globale) et le sens à chercher : achat, vente ou les deux. Le sens vient toujours de la tendance : haussière, le scanner cherche des achats ; baissière, des ventes ; jamais à contre-courant. Un marché est « prêt » quand un repli ou une cassure vient d'apparaître dans ce sens, avec une entrée, un stop et un objectif proposés.</p>
     <p>Le scanner analyse tous tes marchés suivis sur les 5 unités de temps et les classe par qualité de configuration, de 0 à 100. La note monte quand les unités de temps sont alignées, quand un repli ou une cassure vient d'apparaître dans le sens de la tendance et quand une zone d'appui est proche. Elle baisse quand le prix bute sur une zone contraire. La colonne Volatilité compare l'ATR 1 h actuel à sa valeur habituelle : au-dessus de ×1,3, le marché se réveille.</p>
     <p>Ajoute ou retire des marchés sous le tableau. Le scan se relance toutes les 5 minutes tant que la page est ouverte. Une note élevée signale un marché à regarder de près, pas une entrée automatique : clique sur la ligne pour vérifier l'analyse complète.</p>
+  </details>
+  <details>
+    <summary>Les conditions gagnantes</summary>
+    <p>À la fin du test de fiabilité, Boussole cherche dans l'historique les conditions qui ont fait gagner tes signaux : le type (repli ou cassure), le sens, la session, la tendance de fond, l'ADX, la volatilité et le jour, seuls ou deux à la fois. Une condition n'est retenue que si elle est gagnante à la fois sur les 70 % les plus anciens des trades et sur les 30 % récents. Elle est marquée « Solide » seulement si elle dépasse la meilleure condition que le hasard produirait en mélangeant les résultats entre les trades.</p>
+    <p>La colonne « Maintenant » dit si le signal est actif, ou si le contexte est réuni et qu'il faut attendre un repli ou une cassure. Si aucune condition n'est « Solide », ce que tu vois est probablement de la chance : ne les suis pas. Aucune condition ne garantit un trade gagnant : elle améliore seulement la sélection de tes trades, à vérifier en démo.</p>
   </details>
   <details>
     <summary>La fiabilité des signaux</summary>
@@ -4724,6 +4729,74 @@ function psRender() {
   $("psOut").innerHTML = h;
 }
 
+/* =====================  Conditions gagnantes (recherche dans l'historique)  ===================== */
+/* Teste chaque condition (une seule, ou deux à la fois) sur les 70 % anciens des trades, puis la vérifie sur les 30 % récents.
+   Note d'une condition = le plus faible de ses deux résultats moyens (essai, vérification). */
+function btMine(T, R) {
+  const n = T.length, cut = Math.floor(n * 0.7), idx = new Map(), elig = []; let ni = 0, no = 0, si = 0, so = 0;
+  T.forEach((t, i) => { for (const k of t.toks) { if (!idx.has(k)) idx.set(k, []); idx.get(k).push(i); } if (i < cut) { si += R[i]; ni++; } else { so += R[i]; no++; } });
+  const keys = [...idx.keys()], fk = k => k.split("=")[0];
+  const test = (toks, list) => {
+    let a_i = 0, ai = 0, wi = 0, a_o = 0, ao = 0, wo = 0;
+    for (const i of list) { if (i < cut) { a_i++; ai += R[i]; if (R[i] > 0) wi++; } else { a_o++; ao += R[i]; if (R[i] > 0) wo++; } }
+    if (a_i < 15 || a_o < 8) return;
+    const mi = ai / a_i, mo = ao / a_o; elig.push({ toks, ni: a_i, ai: mi, wi: wi / a_i * 100, no: a_o, ao: mo, wo: wo / a_o * 100, stat: Math.min(mi, mo) });
+  };
+  for (let a = 0; a < keys.length; a++) {
+    test([keys[a]], idx.get(keys[a]));
+    for (let b = a + 1; b < keys.length; b++) { if (fk(keys[a]) === fk(keys[b])) continue; const set = new Set(idx.get(keys[b])); test([keys[a], keys[b]], idx.get(keys[a]).filter(i => set.has(i))); }
+  }
+  let best = -Infinity; for (const r of elig) if (r.stat > best) best = r.stat;
+  const hold = elig.filter(r => r.ai >= 0.15 && r.ao >= 0.1).sort((x, y) => y.stat - x.stat);
+  return { hold, tested: elig.length, best, baseI: ni ? si / ni : 0, baseO: no ? so / no : 0 };
+}
+function btFind(c) {
+  const { arr, A, AD, sigs, biasAt, minG, all, L } = c;
+  if (all.length < 60) return { few: true, n: all.length };
+  const toksOf = (type, dir, t, g, i) => {
+    const ad = AD[i], a = A[i], w = A.slice(Math.max(0, i - 100), i).filter(x => x != null).sort((x, y) => x - y), med = w.length ? w[w.length >> 1] : null, vr = a != null && med ? a / med : null;
+    return [["type", type === "pb" ? "repli" : "cassure"], ["sens", dir > 0 ? "achat" : "vente"], ["session", "session " + sessionOf(t)],
+      ["tendance", g == null || Math.abs(g) < minG ? "tendance neutre" : Math.sign(g) === dir ? "tendance dans le sens" : "tendance à contre-sens"],
+      ["adx", ad == null ? null : ad < 20 ? "ADX sous 20" : ad < 30 ? "ADX de 20 à 30" : "ADX au-dessus de 30"],
+      ["vol", vr == null ? null : vr < 0.8 ? "volatilité calme" : vr > 1.3 ? "volatilité forte" : "volatilité normale"],
+      ["jour", "le " + JOURS[new Date(t).getUTCDay()].toLowerCase()]].filter(x => x[1]).map(x => x[0] + "=" + x[1]);
+  };
+  const T = all.slice().sort((a, b) => a.t - b.t).map(t => Object.assign({}, t, { toks: toksOf(t.s.type, t.s.dir, t.t, t.g, t.s.i) }));
+  const real = btMine(T, T.map(t => t.R)), rnd = psRng((12345 ^ T.length) >>> 0), B = 120, nulls = [];
+  /* Test de hasard : on mélange les résultats entre les trades et on note la MEILLEURE condition trouvée à chaque fois. */
+  for (let b = 0; b < B; b++) { const R = T.map(t => t.R); for (let i = R.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); const x = R[i]; R[i] = R[j]; R[j] = x; } nulls.push(btMine(T, R).best); }
+  nulls.sort((a, b) => a - b);
+  const thr = nulls[Math.floor(0.95 * (B - 1))], p = (nulls.filter(x => x >= real.best).length + 1) / (B + 1);
+  for (const r of real.hold) r.solid = r.stat > thr;
+  /* état actuel de chaque condition retenue */
+  const recent = sigs.filter(s => s.i >= L - 3), gNow = biasAt(L - 1), live = [];
+  for (const r of real.hold.slice(0, 6)) {
+    let st = { kind: "no" };
+    for (const s of recent) { const tk = toksOf(s.type, s.dir, arr[s.i].t, biasAt(s.i), s.i); if (r.toks.every(x => tk.includes(x))) { st = { kind: "active", s, ago: L - s.i }; break; } }
+    if (st.kind === "no") for (const type of ["pb", "bo"]) for (const dir of [1, -1]) { const tk = toksOf(type, dir, arr[L].t, gNow, L - 1); if (st.kind === "no" && r.toks.every(x => tk.includes(x))) st = { kind: "wait", needType: !r.toks.some(x => x.startsWith("type=")), needSens: !r.toks.some(x => x.startsWith("sens=")), type, dir }; }
+    live.push(st);
+  }
+  return Object.assign({ n: T.length, thr, p, live, solid: real.hold.filter(r => r.solid).length }, real);
+}
+function btMineHtml(o) {
+  const M = o.mine; if (!M) return "";
+  const pc = x => fmt(x, 0) + " %", S = (n, w, a) => n + " trades, " + pc(w) + ", " + fmtR(a), cap = t => t.charAt(0).toUpperCase() + t.slice(1);
+  if (M.few) return '<section class="card"><h3>Conditions gagnantes</h3><p class="muted">Seulement ' + M.n + " signaux rejoués : il en faut au moins 60 pour chercher des conditions fiables. Allonge l'historique ou choisis une unité de temps plus petite.</p></section>";
+  const n = M.hold.length, k = M.solid, lvl = !n ? "stop" : k ? "ok" : "warn", pp = M.p < 0.01 ? "moins de 1 %" : fmt(M.p * 100, 0) + " %";
+  const verdict = !n ? "Aucune condition n'a tenu aux deux périodes : sur ce marché et cette unité de temps, rien ne permet de mieux choisir tes signaux. Ne force pas."
+    : k ? k + " condition" + (k > 1 ? "s dépassent" : " dépasse") + " nettement ce que le hasard produit (probabilité d'une chance : " + pp + "). L'effet paraît réel : confirme-le en démo avant de le suivre avec de l'argent."
+    : n + " condition" + (n > 1 ? "s ont" : " a") + " tenu aux deux périodes, mais aucune ne dépasse ce que le hasard produit sur des résultats mélangés (probabilité d'une chance : " + pp + "). Ne les suis pas : c'est probablement de la chance.";
+  const liveCell = l => l.kind === "active" ? '<span class="p"><b>Signal actif</b></span> <small class="muted">' + (l.s.type === "pb" ? "repli " : "cassure ") + (l.s.dir > 0 ? "acheteur" : "vendeur") + ", il y a " + l.ago + " bougie" + (l.ago > 1 ? "s" : "") + "</small>"
+    : l.kind === "wait" ? '<span class="warn"><b>Contexte réuni</b></span> <small class="muted">attends un ' + (l.needType ? "signal" : l.type === "pb" ? "repli" : "cassure") + (l.needSens ? "" : l.dir > 0 ? " acheteur" : " vendeur") + "</small>" : '<span class="muted">Pas maintenant</span>';
+  let h = '<section class="card"><div class="card-h"><h3>Conditions gagnantes</h3><span class="muted" style="margin:0">' + M.n + " trades analysés, " + M.tested + " conditions testées</span></div>" +
+    '<p class="bt-verdict" data-level="' + lvl + '">' + esc(verdict) + "</p>";
+  if (n) h += '<div class="scroll"><table class="sc-tbl"><thead><tr><th>Condition</th><th>Essai (70 %)</th><th>Vérification (30 %)</th><th>Solidité</th><th>Maintenant</th></tr></thead><tbody>' +
+    M.hold.slice(0, 6).map((r, i) => "<tr><td><b>" + esc(cap(r.toks.map(x => x.split("=")[1]).join(" + "))) + "</b></td><td><small>" + S(r.ni, r.wi, r.ai) + '</small></td><td class="p"><small>' + S(r.no, r.wo, r.ao) + "</small></td><td>" + (r.solid ? '<span class="tag ok">Solide</span>' : '<span class="tag">Possible</span>') + "</td><td>" + liveCell(M.live[i]) + "</td></tr>").join("") + "</tbody></table></div>" +
+    '<p class="muted">Pour comparaison, tous les signaux sans condition : ' + fmtR(M.baseI) + " par trade en essai, " + fmtR(M.baseO) + " en vérification.</p>";
+  h += `<p class="muted">Chaque condition (une seule, ou deux à la fois, parmi le type de signal, le sens, la session, la tendance de fond, l'ADX, la volatilité et le jour) est cherchée sur les 70 % les plus anciens des trades, puis vérifiée sur les 30 % suivants. Retenue si elle a au moins 15 trades et +0,15 R en essai, au moins 8 trades et +0,1 R en vérification. « Solide » : sa note (le plus faible des deux résultats moyens) dépasse la meilleure note que le hasard produit dans 95 % des cas, mesurée en mélangeant 120 fois les résultats entre les trades (seuil : ${fmtR(M.thr)}). Plus on teste de conditions, plus certaines paraissent gagnantes par chance, d'où ce test.</p></section>`;
+  return h;
+}
+
 /* =====================  Fiabilité des signaux (rejeu historique)  ===================== */
 function rStats(T) {
   const rs = T.map(t => t.R), wins = rs.filter(r => r > 0), losses = rs.filter(r => r <= 0);
@@ -4780,10 +4853,12 @@ async function btRun() {
     const all = [], filt = []; let oA = -1, oF = -1;
     for (const s of sigs) {
       const g = biasAt(s.i), d = g != null && Math.abs(g) >= minG ? Math.sign(g) : 0;
-      if (s.i > oA) { const t = sim(s); if (t) { all.push(t); oA = t.exitI; } }
+      if (s.i > oA) { const t = sim(s); if (t) { all.push(Object.assign({ g }, t)); oA = t.exitI; } }
       if (d && d === s.dir && s.i > oF) { const t = sim(s); if (t) { filt.push(Object.assign({ g }, t)); oF = t.exitI; } }
     }
-    btRender({ key, tfId, rr, minG, cost, arr, all, filt });
+    st("Recherche des conditions gagnantes…"); await sleep(20);
+    const mine = btFind({ arr, A, AD: adxSeries(arr), sigs, biasAt, minG, all, L });
+    btRender({ key, tfId, rr, minG, cost, arr, all, filt, mine });
     st("");
   } catch (e) { st(e.message === "Failed to fetch" ? "Connexion impossible pour charger l'historique." : e.message, true); }
   finally { $("btRun").disabled = false; }
@@ -4808,7 +4883,7 @@ function btRender(o) {
   $("btOut").innerHTML =
     '<p class="bt-verdict" data-level="' + (F.n < 30 ? "warn" : F.avg > 0.1 ? "ok" : F.avg > -0.1 ? "warn" : "stop") + '">' + verdict + filterNote + "</p>" +
     '<p class="muted">' + esc(instName(o.key)) + ", signaux en " + tfn + ", du " + dfmt(from) + " au " + dfmt(to) + ". Ratio 1 : " + fmt(o.rr, 1) + ", filtre score ≥ " + o.minG + (o.cost ? ", coût de " + fmt(o.cost) + " par trade" : ", sans coût de transaction") + ".</p>" +
-    '<h3 class="bt-h">Signaux dans le sens de la tendance (comme l\'application les propose)</h3><div class="stats">' + kpis(F) + "</div>" +
+    btMineHtml(o) + '<h3 class="bt-h">Signaux dans le sens de la tendance (comme l\'application les propose)</h3><div class="stats">' + kpis(F) + "</div>" +
     '<section class="card"><div class="card-h"><h3>Courbe des résultats en R</h3><span class="bt-key"><i class="k1"></i>avec filtre <i class="k2"></i>sans filtre</span></div>' + curveSvg([{ pts: Al.curve, cls: "alt" }, { pts: F.curve, cls: "main" }]) + "</section>" +
     '<div class="pf-grid">' + tbl("Par type de signal", grp(o.filt, t => t.s.type === "pb" ? "Repli sur EMA 20" : "Cassure")) + tbl("Par sens", grp(o.filt, t => t.s.dir > 0 ? "Achats" : "Ventes")) +
     tbl("Par session (heure d'entrée)", grp(o.filt, t => sessionOf(t.t))) + tbl("Sorties", exits) + "</div>" +
