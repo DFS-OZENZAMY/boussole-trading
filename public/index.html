@@ -115,6 +115,11 @@ details ol li{margin:4px 0}
 .vol-log li{padding:5px 0;border-top:1px solid var(--line)}
 .vol-log li span{font-weight:700;color:var(--ink);margin-right:6px}
 #zoneList ul{list-style:none;margin:0;padding:0}
+#divBox ul{list-style:none;margin:0 0 10px;padding:0}
+#divBox li{padding:7px 0 7px 10px;border-top:1px solid var(--line);border-left:4px solid var(--flat);font-size:13px}
+#divBox li.buy{border-left-color:var(--bull)} #divBox li.sell{border-left-color:var(--bear)}
+#divBox li span{color:var(--mute)}
+#divBox .div-stat{font-size:13px;margin:8px 0}
 #zoneList li{display:grid;grid-template-columns:1.4fr 1.3fr 1.2fr .9fr;gap:8px;padding:7px 0 7px 10px;border-top:1px solid var(--line);border-left:4px solid var(--flat);font-size:13px}
 #zoneList li.sell{border-left-color:var(--bear)} #zoneList li.buy{border-left-color:var(--bull)} #zoneList li.mid,#zoneList li.poc{border-left-color:var(--gold)}
 #zoneList li span{color:var(--mute)}
@@ -686,6 +691,10 @@ button.danger{background:var(--bear);border-color:var(--bear);color:#fff}
         <h3>Zones acheteurs et vendeurs</h3>
         <div id="zoneList"></div>
       </div>
+      <div>
+        <h3>Divergences RSI</h3>
+        <div id="divBox"></div>
+      </div>
     </div>
     <p class="muted" id="volQuality"></p>
   </section>
@@ -705,6 +714,8 @@ button.danger{background:var(--bear);border-color:var(--bear);color:#fff}
         <label class="chk"><input type="checkbox" id="showVol" checked> Volume</label>
         <label class="chk"><input type="checkbox" id="showZones" checked> Zones</label>
         <label class="chk"><input type="checkbox" id="showProf" checked> Profil de volume</label>
+        <label class="chk"><input type="checkbox" id="showDiv" checked> Divergences RSI</label>
+        <select id="divMode" aria-label="Type de divergences"><option value="strict">Classiques, fiables</option><option value="large">Classiques, plus nombreuses</option><option value="hidden">Classiques et cachées</option></select>
       </div>
       <div class="seg" id="tabs" role="group" aria-label="Unité de temps du graphique"></div>
     </div>
@@ -1191,6 +1202,12 @@ button.danger{background:var(--bear);border-color:var(--bear);color:#fff}
     <p>Ajoute ou retire des marchés sous le tableau. Le scan se relance toutes les 5 minutes tant que la page est ouverte. Une note élevée signale un marché à regarder de près, pas une entrée automatique : clique sur la ligne pour vérifier l'analyse complète.</p>
   </details>
   <details>
+    <summary>Les divergences RSI</summary>
+    <p>Une divergence apparaît quand le prix et le RSI (14) ne vont plus dans le même sens. <b>Classique haussière</b> : le prix fait un plus bas plus bas, le RSI un plus bas plus haut (l'élan vendeur s'essouffle). <b>Classique baissière</b> : plus haut plus haut du prix, plus haut plus bas du RSI. Les <b>cachées</b> (option « Classiques et cachées ») sont l'inverse et indiquent plutôt une continuation de tendance. Le RSI s'affiche sous le graphique avec les droites qui relient les deux points, sur le prix et sur le RSI.</p>
+    <p>Pour rester fiable, un sommet ou un creux n'est pris en compte qu'une fois confirmé par 5 bougies de chaque côté (3 en mode « plus nombreuses ») : la flèche apparaît donc quelques bougies après le second point, jamais avant, et ne disparaît pas ensuite. Les deux points doivent être espacés de 5 à 60 bougies, avec un écart minimal de prix et de RSI, et aucune bougie ni valeur du RSI ne doit couper la droite qui les relie. En mode « fiables », le RSI du premier point doit être sous 40 (haussières) ou au-dessus de 60 (baissières).</p>
+    <p>Le panneau « Divergences RSI » mesure leur fiabilité sur ce marché : après la confirmation, le prix atteint-il +1 ATR dans le bon sens avant −1 ATR, dans les 30 bougies ? Le résultat est comparé à une entrée prise au hasard dans le même sens, et le bouton « Tester sur 5 000 bougies » donne un échantillon plus large. Une divergence reste un signal parmi d'autres : elle n'annonce pas un retournement à coup sûr, surtout contre une forte tendance.</p>
+  </details>
+  <details>
     <summary>Les conditions gagnantes</summary>
     <p>À la fin du test de fiabilité, Boussole cherche dans l'historique les conditions qui ont fait gagner tes signaux : le type (repli ou cassure), le sens, la session, la tendance de fond, l'ADX, la volatilité et le jour, seuls ou deux à la fois. Une condition n'est retenue que si elle est gagnante à la fois sur les 70 % les plus anciens des trades et sur les 30 % récents. Elle est marquée « Solide » seulement si elle dépasse la meilleure condition que le hasard produirait en mélangeant les résultats entre les trades.</p>
     <p>La colonne « Maintenant » dit si le signal est actif, ou si le contexte est réuni et qu'il faut attendre un repli ou une cassure. Si aucune condition n'est « Solide », ce que tu vois est probablement de la chance : ne les suis pas. Aucune condition ne garantit un trade gagnant : elle améliore seulement la sélection de tes trades, à vérifier en démo.</p>
@@ -1468,6 +1485,7 @@ function resetData() {
   if (typeof fpReset === "function") { fpReset(); fp.rowSel = store("fp-row-" + inst) || "auto"; }
   if (cs) { cs.setMarkers([]); for (const pl of propLines) { try { cs.removePriceLine(pl); } catch {} } propLines = []; }
   try { bsClear(); } catch {}
+  try { divClear(); } catch {}
   $("price").textContent = "—"; $("updated").textContent = "Pas encore chargé";
   $("vTitle").textContent = "En attente des données"; $("vScore").textContent = "";
   $("grid").innerHTML = ""; $("props").innerHTML = ""; $("propCtx").textContent = "En attente des données.";
@@ -3416,6 +3434,7 @@ function initChart() {
   const lineOpt = w => ({ lineWidth: w, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
   emaS.e20 = chart.addLineSeries(lineOpt(1)); emaS.e50 = chart.addLineSeries(lineOpt(1)); emaS.e200 = chart.addLineSeries(lineOpt(2));
   initVolume();
+  rsiS = chart.addLineSeries({ priceScaleId: "rsi", lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false, priceFormat: { type: "price", precision: 0, minMove: 1 }, autoscaleInfoProvider: () => ({ priceRange: { minValue: 0, maxValue: 100 } }) });
   chartTheme();
   try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", chartTheme); } catch {}
 }
@@ -3526,6 +3545,9 @@ function initPlan() {
   $("clear").addEventListener("click", () => { ["entry", "sl", "tp"].forEach(k => $(k).value = ""); $("planMsg").textContent = ""; savePlan(); drawLines(); });
   const ss = store("xau-sig"); if (ss != null) $("showSig").checked = ss === "1";
   $("showSig").addEventListener("change", () => { store("xau-sig", $("showSig").checked ? "1" : "0"); sigKey = null; updateChart(); });
+  { const sd = store("xau-div"); if (sd != null) $("showDiv").checked = sd === "1"; const dm = store("xau-divmode"); if (dm && DIV_MODES[dm]) $("divMode").value = dm; }
+  $("showDiv").addEventListener("change", () => { store("xau-div", $("showDiv").checked ? "1" : "0"); sigKey = null; updateChart(); });
+  $("divMode").addEventListener("change", () => { store("xau-divmode", $("divMode").value); sigKey = null; updateChart(); });
   $("recalc").addEventListener("click", () => { sigKey = null; updateChart(); });
   loadPlan(); initChart(); setDir(dir); setTf(chartTf);
 }
@@ -3593,6 +3615,159 @@ function findSignals(arr) {
   }
   return out;
 }
+/* =====================  Divergences RSI  ===================== */
+var rsiS = null, divSeries = [], divData = null;
+const DIV_MODES = {
+  strict: { k: 5, zone: true, minRsi: 3, hidden: false },
+  large: { k: 3, zone: false, minRsi: 2, hidden: false },
+  hidden: { k: 5, zone: true, minRsi: 3, hidden: true },
+};
+/* RSI de Wilder : une valeur par bougie (vide avant la période). */
+function rsiSeries(c, n = 14) {
+  const out = new Array(c.length).fill(null); if (c.length <= n) return out;
+  let g = 0, l = 0;
+  for (let i = 1; i <= n; i++) { const d = c[i] - c[i - 1]; if (d > 0) g += d; else l -= d; }
+  g /= n; l /= n; out[n] = l === 0 ? 100 : 100 - 100 / (1 + g / l);
+  for (let i = n + 1; i < c.length; i++) {
+    const d = c[i] - c[i - 1]; g = (g * (n - 1) + Math.max(d, 0)) / n; l = (l * (n - 1) + Math.max(-d, 0)) / n;
+    out[i] = l === 0 ? 100 : 100 - 100 / (1 + g / l);
+  }
+  return out;
+}
+/* Divergences entre le prix et le RSI, sans regarder le futur :
+   - un sommet ou un creux n'existe qu'une fois confirmé par k bougies de chaque côté, la divergence est donc signalée k bougies après le second point ;
+   - classique haussière : plus bas plus bas du prix, plus bas plus haut du RSI (baissière : l'inverse) ;
+   - cachée haussière : plus bas plus haut du prix, plus bas plus bas du RSI (baissière : l'inverse) ;
+   - écarts minimaux (prix et RSI), distance entre les deux points bornée, et aucune bougie ni valeur de RSI ne doit couper la droite qui relie les deux points. */
+function findDivergences(arr, o) {
+  const cfg = Object.assign({ k: 5, minGap: 5, maxGap: 60, zone: true, zLo: 40, zHi: 60, minRsi: 3, minATR: 0.1, hidden: false }, o), n = arr.length;
+  const last = n - 2; /* la dernière bougie est en formation : on ne l'utilise pas */
+  if (n < 60) return { divs: [], rsi: [], cfg };
+  const c = arr.map(b => b.c), h = arr.map(b => b.h), l = arr.map(b => b.l), R = rsiSeries(c.slice(0, last + 1)), A = atrSeries(arr), k = cfg.k, lo = [], hi = [];
+  for (let i = k; i + k <= last; i++) {
+    let isLo = true, isHi = true;
+    for (let j = 1; j <= k && (isLo || isHi); j++) {
+      if (!(l[i] < l[i - j] && l[i] <= l[i + j])) isLo = false;
+      if (!(h[i] > h[i - j] && h[i] >= h[i + j])) isHi = false;
+    }
+    if (isLo) lo.push(i); if (isHi) hi.push(i);
+  }
+  const ext = (i, low) => { let bj = -1, bv = null; for (let j = Math.max(0, i - 2); j <= Math.min(last, i + 2); j++) { const v = R[j]; if (v == null) continue; if (bv == null || (low ? v < bv : v > bv)) { bv = v; bj = j; } } return bj < 0 ? null : { j: bj, v: bv }; };
+  const clean = (i0, i1, r0, r1, low) => {
+    const P = low ? l : h, tol = 0.1 * A[i1];
+    for (let j = i0 + 1; j < i1; j++) { const line = P[i0] + (P[i1] - P[i0]) * (j - i0) / (i1 - i0); if (low ? l[j] < line - tol : h[j] > line + tol) return false; }
+    for (let j = r0.j + 1; j < r1.j; j++) { const v = R[j]; if (v == null) continue; const line = r0.v + (r1.v - r0.v) * (j - r0.j) / (r1.j - r0.j); if (low ? v < line - 1 : v > line + 1) return false; }
+    return true;
+  };
+  const divs = [];
+  const scan = (P, low) => {
+    for (let q = 1; q < P.length; q++) {
+      const i0 = P[q - 1], i1 = P[q], gap = i1 - i0; if (gap < cfg.minGap || gap > cfg.maxGap) continue;
+      const a1 = A[i1]; if (!a1) continue;
+      const p0 = low ? l[i0] : h[i0], p1 = low ? l[i1] : h[i1], r0 = ext(i0, low), r1 = ext(i1, low); if (!r0 || !r1 || r1.j <= r0.j) continue;
+      const dp = p1 - p0, dr = r1.v - r0.v, minP = cfg.minATR * a1; let kind = null;
+      if (low) { if (dp < -minP && dr >= cfg.minRsi) kind = "reg"; else if (cfg.hidden && dp > minP && dr <= -cfg.minRsi) kind = "hid"; }
+      else { if (dp > minP && dr <= -cfg.minRsi) kind = "reg"; else if (cfg.hidden && dp < -minP && dr >= cfg.minRsi) kind = "hid"; }
+      if (!kind) continue;
+      if (kind === "reg" && cfg.zone && (low ? r0.v > cfg.zLo : r0.v < cfg.zHi)) continue;
+      if (!clean(i0, i1, r0, r1, low)) continue;
+      divs.push({ dir: low ? 1 : -1, kind, i0, i1, conf: i1 + k, p0, p1, r0, r1, a: a1 });
+    }
+  };
+  scan(lo, true); scan(hi, false); divs.sort((x, y) => x.conf - y.conf);
+  return { divs, rsi: R, cfg };
+}
+/* Fiabilité mesurée : après la confirmation, le prix atteint-il +1 ATR dans le sens attendu avant −1 ATR (30 bougies au plus) ?
+   Comparé au même test pour une entrée prise à n'importe quelle bougie dans le même sens. */
+function divStats(arr, divs) {
+  const H = 30, A = atrSeries(arr), last = arr.length - 2;
+  const outcome = (i, d) => {
+    const a = A[i]; if (!a) return null; const e = arr[i].c, up = e + a, dn = e - a;
+    for (let j = i + 1; j <= Math.min(last, i + H); j++) { const u = arr[j].h >= up, w = arr[j].l <= dn; if (u && w) return -1; if (d > 0 ? u : w) return 1; if (d > 0 ? w : u) return -1; }
+    return i + H <= last ? 0 : null;
+  };
+  const base = { 1: [0, 0], "-1": [0, 0] };
+  for (let i = 200; i + H <= last; i++) for (const d of [1, -1]) { const r = outcome(i, d); if (r === 1) base[d][0]++; else if (r === -1) base[d][1]++; }
+  const bRate = d => base[d][0] + base[d][1] ? base[d][0] / (base[d][0] + base[d][1]) : 0.5;
+  const grp = ds => { let w = 0, lo = 0, t = 0, e = 0, v = 0; for (const x of ds) { const r = outcome(x.conf, x.dir); if (r === 1) w++; else if (r === -1) lo++; else if (r === 0) t++; else continue; if (r !== 0) { const p0 = bRate(x.dir); e += p0; v += p0 * (1 - p0); } }
+    const dec = w + lo; return { n: ds.length, dec, w, lo, t, rate: dec ? w / dec : null, exp: dec ? e / dec : null, z: dec && v > 0 ? (w - e) / Math.sqrt(v) : 0 }; };
+  return { bull: grp(divs.filter(x => x.dir > 0)), bear: grp(divs.filter(x => x.dir < 0)), all: grp(divs) };
+}
+function divVerdict(S) {
+  const a = S.all, pc = x => fmt(x * 100, 0) + " %";
+  if (a.dec < 20) return { lvl: "warn", txt: "Seulement " + a.dec + " divergence" + (a.dec > 1 ? "s" : "") + " résolue" + (a.dec > 1 ? "s" : "") + " sur cet historique : trop peu pour juger leur fiabilité. Lance le test sur 5 000 bougies." };
+  const diff = (a.rate - a.exp) * 100;
+  if (a.z >= 1.64) return { lvl: "ok", txt: pc(a.rate) + " des divergences ont atteint +1 ATR avant −1 ATR, contre " + pc(a.exp) + " pour une entrée au hasard dans le même sens (+" + fmt(diff, 0) + " points) : avantage mesuré sur " + a.dec + " cas. À confirmer en démo." };
+  return { lvl: a.z <= -1.64 ? "stop" : "warn", txt: pc(a.rate) + " des divergences ont atteint +1 ATR avant −1 ATR, contre " + pc(a.exp) + " pour une entrée au hasard dans le même sens (" + (diff >= 0 ? "+" : "−") + fmt(Math.abs(diff), 0) + " points) : pas mieux que le hasard sur ce marché et cette unité de temps (" + a.dec + " cas)." };
+}
+function divLayout(on) {
+  if (!chart || !rsiS) return;
+  cs.priceScale().applyOptions({ scaleMargins: { top: 0.06, bottom: on ? 0.40 : 0.18 } });
+  chart.priceScale("rsi").applyOptions({ scaleMargins: { top: 0.64, bottom: 0.19 }, visible: on, borderVisible: false });
+}
+function divClear() {
+  if (!chart) return;
+  for (const x of divSeries) { try { chart.removeSeries(x); } catch {} }
+  divSeries = []; divData = null; if (rsiS) rsiS.setData([]);
+  const b = $("divBox"); if (b) b.innerHTML = "";
+}
+let divLvls = [];
+function divUpdate(arr) {
+  if (!chart || !rsiS) return [];
+  for (const x of divSeries) { try { chart.removeSeries(x); } catch {} }
+  divSeries = [];
+  for (const pl of divLvls) { try { rsiS.removePriceLine(pl); } catch {} } divLvls = [];
+  const on = $("showDiv").checked; divLayout(on);
+  if (!on) { rsiS.setData([]); divData = null; divRenderBox(); return []; }
+  const mode = DIV_MODES[$("divMode").value] || DIV_MODES.strict, D = findDivergences(arr, mode);
+  divData = { arr, D, mode, S: divStats(arr, D.divs) };
+  rsiS.applyOptions({ color: css("--mute") });
+  rsiS.setData(D.rsi.map((v, i) => v == null ? null : { time: toTime(arr[i].t), value: v }).filter(Boolean));
+  for (const v of [30, 70]) divLvls.push(rsiS.createPriceLine({ price: v, color: css("--mute"), lineStyle: 2, lineWidth: 1, axisLabelVisible: false }));
+  const mk = [];
+  for (const d of D.divs.slice(-12)) {
+    const col = css(d.dir > 0 ? "--bull" : "--bear"), reg = d.kind === "reg";
+    const line = (scale, ta, va, tb, vb) => {
+      const x = chart.addLineSeries(Object.assign({ color: col, lineWidth: reg ? 2 : 1, lineStyle: reg ? 0 : 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false }, scale ? { priceScaleId: scale, autoscaleInfoProvider: () => ({ priceRange: { minValue: 0, maxValue: 100 } }) } : {}));
+      x.setData([{ time: ta, value: va }, { time: tb, value: vb }]); divSeries.push(x);
+    };
+    line(null, toTime(arr[d.i0].t), d.p0, toTime(arr[d.i1].t), d.p1);
+    line("rsi", toTime(arr[d.r0.j].t), d.r0.v, toTime(arr[d.r1.j].t), d.r1.v);
+    mk.push({ time: toTime(arr[d.conf].t), position: d.dir > 0 ? "belowBar" : "aboveBar", color: col, shape: d.dir > 0 ? "arrowUp" : "arrowDown", text: reg ? "Div" : "Div cachée" });
+  }
+  divRenderBox();
+  return mk;
+}
+function divText(d, arr) {
+  const when = new Date(arr[d.conf].t).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  return "<b>" + (d.dir > 0 ? "Haussière" : "Baissière") + (d.kind === "reg" ? " classique" : " cachée") + "</b> <span>confirmée le " + when + "</span><br><span>Prix " + fmt(d.p0) + " → " + fmt(d.p1) + " · RSI " + fmt(d.r0.v, 0) + " → " + fmt(d.r1.v, 0) + "</span>";
+}
+function divStatHtml(S, title) {
+  const V = divVerdict(S), row = (lab, g) => g.dec ? "<span>" + lab + " : " + g.w + " réussies, " + g.lo + " ratées" + (g.t ? ", " + g.t + " sans issue" : "") + "</span><br>" : "";
+  return '<p class="bt-verdict" data-level="' + V.lvl + '" style="font-size:13px;padding:10px 12px">' + (title ? "<b>" + esc(title) + "</b><br>" : "") + esc(V.txt) + "</p><p class=\"div-stat\">" + row("Haussières", S.bull) + row("Baissières", S.bear) + "</p>";
+}
+function divRenderBox() {
+  const box = $("divBox"); if (!box) return;
+  if (!divData) { box.innerHTML = '<p class="muted">Active « Divergences RSI » au-dessus du graphique.</p>'; return; }
+  const { arr, D, mode, S } = divData, last = D.divs.slice(-5).reverse(), L = arr.length - 2;
+  let h = last.length ? "<ul>" + last.map(d => '<li class="' + (d.dir > 0 ? "buy" : "sell") + '">' + divText(d, arr) + "<br><span>il y a " + (L - d.conf + 1) + " bougie" + (L - d.conf + 1 > 1 ? "s" : "") + "</span></li>").join("") + "</ul>" : '<p class="muted">Aucune divergence validée sur les bougies affichées.</p>';
+  h += divStatHtml(S, "Fiabilité sur cet historique");
+  h += '<div class="btns"><button type="button" class="ghost" id="divDeepBtn">Tester sur 5 000 bougies</button></div><div id="divDeep"></div>';
+  h += '<p class="muted" style="font-size:12px;margin:8px 0 0">Un sommet ou un creux n\'est confirmé qu\'après ' + mode.k + " bougies de chaque côté : la flèche apparaît donc " + mode.k + " bougies après le second point, jamais avant. " + (mode.zone ? "Les divergences classiques exigent un RSI sous 40 (haussières) ou au-dessus de 60 (baissières) au premier point. " : "") + "Réussite : +1 ATR atteint avant −1 ATR dans les 30 bougies, comparé à une entrée au hasard dans le même sens.</p>";
+  box.innerHTML = h;
+  $("divDeepBtn").addEventListener("click", divDeep);
+}
+async function divDeep() {
+  const key = inst, tf = chartTf, out = $("divDeep"), btn = $("divDeepBtn"); if (!divData) return;
+  btn.disabled = true; out.innerHTML = '<p class="muted">Chargement de l\'historique…</p>';
+  try {
+    const bars = await fetchBars(key, tf, 5000); if (key !== inst || tf !== chartTf) return;
+    const D = findDivergences(bars, divData.mode), S = divStats(bars, D.divs);
+    out.innerHTML = divStatHtml(S, "Test sur " + bars.length + " bougies");
+  } catch (e) { out.innerHTML = '<p class="err">' + esc(e.message === "Failed to fetch" ? "Connexion impossible pour charger l'historique." : e.message) + "</p>"; }
+  finally { btn.disabled = false; }
+}
+
 const TYPE = { pb: "repli sur EMA 20", bo: "cassure du plus haut/bas 20 bougies" };
 function refreshSignals(arr) {
   sigCache = findSignals(arr);
@@ -3602,7 +3777,7 @@ function refreshSignals(arr) {
     time: toTime(s.t), position: s.dir > 0 ? "belowBar" : "aboveBar",
     color: css(s.dir > 0 ? "--bull" : "--bear"), shape: s.dir > 0 ? "arrowUp" : "arrowDown",
     text: s.type === "pb" ? "Repli" : "Cassure",
-  })) : []).concat(volMarkers(arr)).sort((a, b) => a.time - b.time);
+  })) : []).concat(volMarkers(arr)).concat(divUpdate(arr)).sort((a, b) => a.time - b.time);
   cs.setMarkers(mk);
   buildProposals(arr);
 }
